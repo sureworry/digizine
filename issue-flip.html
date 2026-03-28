@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Issue (flip) — sharvari's digi-zines</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="zine-reader.css">
+</head>
+<body class="issue-page">
+  <div class="wrapper issue-wrapper">
+    <header class="header">
+      <h1 class="header__title-wrap">
+        <a href="index.html" class="title" id="header-title">sharvari's digi-zines</a>
+      </h1>
+      <img src="assets/decorations/flower.png" alt="" class="header-flower" aria-hidden="true">
+      <div class="datetime-wrap">
+        <p class="datetime-date" id="datetime-date"></p>
+        <p class="datetime-time" id="datetime-time"></p>
+      </div>
+    </header>
+
+    <main class="issue-main">
+      <div class="issue-zine-frame">
+        <a href="index.html" class="issue-back" id="issue-back">back to shelf</a>
+        <h2 class="issue-title" id="issue-title">issue</h2>
+        <div class="issue-viewer-row">
+          <button type="button" class="issue-arrow issue-arrow--left" id="issue-arrow-prev" aria-label="Previous spread" style="display: none;">
+            <img src="assets/icons/left arrow.png" alt="">
+          </button>
+          <div id="zine-viewer" class="zine-viewer-root"></div>
+          <button type="button" class="issue-arrow issue-arrow--right" id="issue-arrow-next" aria-label="Next spread" style="display: none;">
+            <img src="assets/icons/right arrow.png" alt="">
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="issue-data.js"></script>
+  <script src="zine-cover.js"></script>
+  <script src="zine-spread.js"></script>
+  <script src="page-flip-controller.js"></script>
+  <script src="zine-viewer.js"></script>
+  <script src="issue-flip.js"></script>
+</body>
+</html>

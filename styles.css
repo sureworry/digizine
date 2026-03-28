@@ -1,0 +1,525 @@
+@font-face {
+  font-family: 'Viksjoe Trial';
+  src: url('assets/fonts/ViksjoeTrial-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Viksjoe Trial';
+  src: url('assets/fonts/ViksjoeTrial-RegularItalic.otf') format('opentype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #EFEFEF;
+  font-family: 'Viksjoe Trial', serif;
+}
+
+/* Canvas 1440×1080 – padding 60px both sides */
+.wrapper {
+  max-width: 1440px;
+  min-height: 1080px;
+  margin: 0 auto;
+  padding: 0 60px;
+  position: relative;
+}
+
+/* Title frame: 1320×94, padding top 20px (sides 60px from wrapper) */
+.header {
+  height: 94px;
+  padding: 20px 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+/* When title is wrapped in a link (issue page) */
+.header__title-wrap {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+/* When title is direct child (index page) */
+.header > .title {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-family: 'Viksjoe Trial', serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 28px;
+  line-height: normal;
+  letter-spacing: 1.4px;
+  text-transform: lowercase;
+  margin: 0;
+  color: #3D3C3C;
+  text-decoration: none;
+}
+
+.title:hover {
+  color: #000;
+}
+
+.header-flower {
+  width: 94px;
+  height: 94px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* Calm, continuous rotation for header flower */
+@keyframes header-flower-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.header-flower {
+  animation: header-flower-rotate 16s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.datetime-wrap {
+  flex: 1;
+  text-align: right;
+}
+
+.datetime-date,
+.datetime-time {
+  font-family: 'Viksjoe Trial', serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 28px;
+  line-height: normal;
+  letter-spacing: 1.4px;
+  text-transform: lowercase;
+  margin: 0;
+  color: #A5A5A5;
+}
+
+/*
+ * Outer main: offset below header (~145px). All item x/y live in homepage-spec.js.
+ */
+.shelf-container {
+  position: relative;
+  min-height: 966px;
+  padding: 145px 0 0;
+  padding-bottom: 0;
+}
+
+/* Single parent: every zine / decor / shelf is a direct child; positioned via JS from spec */
+.content-frame {
+  position: relative;
+  width: 1120px;
+  max-width: min(1120px, 100%);
+  height: 789px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.content-frame .layout-item {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  transform: none;
+  box-sizing: border-box;
+}
+
+.content-frame .layout-shelf {
+  object-fit: contain;
+  object-position: bottom;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.content-frame .zine-cover {
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: auto;
+  user-select: none;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/*
+ * idea marinade asset is 657×719; spec box ~285.6×357 (~0.80 vs ~0.91 intrinsic).
+ * contain left a visible band above the art; cover + bottom matches design frame.
+ */
+.content-frame .zine-cover[data-layout-id="idea-marinade"] {
+  object-fit: cover;
+  object-position: center bottom;
+}
+
+.content-frame .layout-draggable {
+  object-fit: contain;
+  object-position: bottom center;
+  pointer-events: auto;
+  user-select: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.content-frame .layout-draggable:active {
+  cursor: grabbing;
+}
+
+.content-frame .decoration-plant {
+  z-index: 1;
+}
+
+.content-frame .decoration-books {
+  z-index: 2;
+}
+
+.content-frame .decoration-cat {
+  overflow: hidden;
+  z-index: 3;
+}
+
+.content-frame .decoration-cat .decoration-cat__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  pointer-events: none;
+}
+
+.content-frame .decoration-cat .decoration-cat__img--smiling {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.content-frame .decoration-cat:hover .decoration-cat__img--smiling {
+  opacity: 1;
+}
+
+/* Issue page scaffold (placeholder sections only) */
+.issue-page .issue-wrapper {
+  min-height: 100vh;
+  padding-top: 20px;
+  padding-bottom: 60px;
+}
+
+.issue-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.issue-back,
+.issue-nav {
+  font-family: 'Viksjoe Trial', serif;
+  font-size: 28px;
+  letter-spacing: 1.4px;
+  text-transform: lowercase;
+  color: #3D3C3C;
+  text-decoration: none;
+}
+
+.issue-back:hover,
+.issue-nav:hover {
+  color: #000;
+}
+
+.issue-title {
+  font-family: 'Viksjoe Trial', serif;
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: 1.4px;
+  text-transform: lowercase;
+  margin: 0;
+  text-align: center;
+  color: #A5A5A5;
+}
+
+.issue-main {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.issue-zine-frame {
+  display: flex;
+  width: 520px;
+  max-width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  margin-top: 120px;
+}
+
+/* ========== Horizontal zine reader (issue-scroll only, no leakage) ========== */
+.issue-page--scroll .issue-title {
+  color: #3D3C3C;
+}
+
+.issue-page--scroll .issue-back {
+  color: #A5A5A5;
+}
+
+.issue-page--scroll .issue-back:hover {
+  color: #3D3C3C;
+}
+
+.issue-page--scroll .issue-scroll-main {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-width: 0; /* allow reader to constrain below */
+}
+
+.issue-page--scroll .issue-zine-frame--scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  gap: 40px;
+  margin-top: 120px;
+}
+
+/* Wrapper keeps frame width = normal content; only strip breaks out */
+.issue-page--scroll .zine-strip-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Strip viewport breaks out of shared padding/max-width; local to reader only */
+.issue-page--scroll .zine-strip-root {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Back to shelf: anchored to page layout, not to strip width */
+.issue-page--scroll .issue-back {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+/* Strip: full-width scrollport only; hits pass through to page-sized scroller below */
+.issue-page--scroll .zine-strip {
+  width: 100%;
+  min-width: 0;
+  pointer-events: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  outline: none;
+}
+
+/* Interactive + a11y focus live on content-sized scroller (stack / strip row) */
+.issue-page--scroll .zine-strip__scroller {
+  pointer-events: auto;
+  outline: none;
+}
+
+.issue-page--scroll .zine-strip__scroller:focus-visible {
+  box-shadow: 0 0 0 2px rgba(61, 60, 60, 0.35);
+  border-radius: 4px;
+}
+
+.issue-page--scroll .zine-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* —— Closed: stacked deck, no horizontal scroll —— */
+.issue-page--scroll .zine-strip--closed {
+  overflow: hidden;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: auto;
+}
+
+/*
+ * Stacked deck: same page box + image rules as open; only position/overlap differs.
+ * --stack-left + scroller width come from JS (open-equivalent widths + −400px advance).
+ */
+.issue-page--scroll .zine-strip--closed .zine-strip__scroller {
+  display: block;
+  position: relative;
+  --zine-stack-lift: 2px;
+  width: auto;
+  min-width: 200px;
+  min-height: calc(520px + (var(--stack-total-n, 1) - 1) * var(--zine-stack-lift) + 16px);
+  height: auto;
+  margin: 0 auto;
+  padding: 10px 18px 20px 10px;
+  box-sizing: content-box;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Same intrinsic sizing as open row: width auto, max-width none, height 520 */
+.issue-page--scroll .zine-strip--closed .zine-strip__page {
+  position: absolute;
+  left: var(--stack-left, 0px);
+  top: calc(var(--page-index) * var(--zine-stack-lift) * -1);
+  flex: none;
+  width: auto;
+  max-width: none;
+  min-width: 0;
+  height: 520px;
+  margin: 0;
+  padding: 0;
+  z-index: calc(var(--stack-total) - var(--page-index));
+  border-radius: 2px;
+  overflow: visible;
+  transform: none;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 250, 250, 0.95);
+  box-shadow:
+    2px 3px 0 rgba(0, 0, 0, 0.04),
+    4px 8px 24px rgba(0, 0, 0, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+.issue-page--scroll .zine-strip--closed .zine-strip__page:nth-child(even) {
+  background: rgba(236, 236, 236, 0.98);
+}
+
+.issue-page--scroll .zine-strip--closed .zine-strip__page.zine-strip__page--text {
+  padding: 1rem;
+  text-align: center;
+  font-family: 'Viksjoe Trial', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: #8a8a8a;
+}
+
+/* Images: identical rules stacked & open — natural aspect at 520px height */
+.issue-page--scroll .zine-strip__page .zine-strip__image {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  display: block;
+  object-fit: contain;
+}
+
+/* Text pages: same min width as open strip */
+.issue-page--scroll .zine-strip__page.zine-strip__page--text {
+  min-width: 320px;
+  height: 520px;
+}
+
+/* —— Open: horizontal spread + scroll —— */
+.issue-page--scroll .zine-strip--open {
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  cursor: default;
+  overscroll-behavior-x: contain;
+}
+
+.issue-page--scroll .zine-strip--open .zine-strip__scroller {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  position: static;
+  width: max-content;
+  height: auto;
+  margin: 0;
+  padding-left: 200px;
+  padding-right: 200px;
+  gap: 0;
+}
+
+/* During FLIP only: keep deck order (cover on top) so pages don’t paint “back over front” */
+.issue-page--scroll .zine-strip--animating .zine-strip__page {
+  z-index: calc(var(--stack-total) - var(--page-index)) !important;
+}
+
+.issue-page--scroll .zine-strip--open .zine-strip__page {
+  position: relative;
+  left: auto;
+  top: auto;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+  height: 520px;
+  margin: 0;
+  z-index: auto;
+  transform: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  font-family: 'Viksjoe Trial', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: #A5A5A5;
+}
+
+/* Image drives page width; fixed height (open strip — natural aspect) */
+.issue-page--scroll .zine-strip--open .zine-strip__page .zine-strip__image {
+  height: 100%;
+  width: auto;
+  max-width: none;
+  display: block;
+  object-fit: contain;
+}
+
+.issue-viewer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+}
+
+.issue-arrow {
+  flex-shrink: 0;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.issue-arrow img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.issue-arrow:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.issue-arrow:disabled {
+  cursor: default;
+  opacity: 0.4;
+}

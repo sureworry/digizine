@@ -1,0 +1,173 @@
+/* Zine reader: viewer, cover, spread. Ref: 520×520 cover, 1040×520 spread centered */
+
+.zine-viewer {
+  position: relative;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0 2rem;
+}
+
+.zine-viewer__stage {
+  position: relative;
+  width: 1040px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+}
+
+/* Closed: single cover 520×520, aspect-ratio 1/1, centered */
+.zine-cover {
+  width: 520px;
+  max-width: calc(100vw - 2rem);
+  aspect-ratio: 1 / 1;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transform-style: preserve-3d;
+  perspective: 1200px;
+}
+
+.zine-cover__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 2px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  backface-visibility: hidden;
+}
+
+.zine-cover--opening .zine-cover__img {
+  animation: zine-cover-open 0.6s ease-in forwards;
+}
+
+@keyframes zine-cover-open {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(-90deg);
+  }
+}
+
+/* Opened: two-page spread 520+520 */
+.zine-spread {
+  display: none;
+  width: 1040px;
+  max-width: 100%;
+  gap: 0;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.zine-viewer--opened .zine-spread {
+  display: flex;
+}
+
+.zine-viewer--opened .zine-cover-wrap {
+  display: none;
+}
+
+.zine-spread__page {
+  width: 520px;
+  max-width: 50%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.04);
+  font-family: 'Viksjoe Trial', serif;
+  font-style: italic;
+  font-size: 18px;
+  color: #A5A5A5;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.zine-page-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.zine-page-base {
+  position: absolute;
+  inset: 0;
+}
+
+.zine-page-sheet {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+}
+
+.zine-page-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.zine-page-face--front {
+  transform: rotateY(0deg);
+}
+
+.zine-page-face--back {
+  transform: rotateY(180deg);
+}
+
+.zine-spread__page:first-child {
+  border-right-width: 0;
+}
+
+.zine-spread__page-content {
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.zine-page-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Flip transition */
+.zine-spread--flipping .zine-spread__page {
+  pointer-events: none;
+}
+
+.zine-spread__page--in:last-child .zine-page-sheet {
+  animation: zine-page-flip-forward 0.7s ease-in-out;
+}
+
+@keyframes zine-page-flip-forward {
+  0% {
+    transform: rotateY(0deg);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  100% {
+    transform: rotateY(-180deg);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* Touch / cursor */
+.zine-viewer [data-action] {
+  cursor: pointer;
+}
+
+.zine-viewer [data-action]:active {
+  opacity: 0.98;
+}

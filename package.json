@@ -1,0 +1,8 @@
+{
+  "name": "digizine",
+  "private": true,
+  "scripts": {
+    "preview": "npx --yes serve . -l 5173 --no-clipboard",
+    "preview:py": "python3 -m http.server 5173"
+  }
+}
