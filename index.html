@@ -27,6 +27,14 @@
         draggable="false"
         aria-hidden="true"
       >
+      <img
+        src="assets/decorations/shelf.png"
+        alt=""
+        class="layout-item layout-shelf"
+        data-layout-id="shelf-2"
+        draggable="false"
+        aria-hidden="true"
+      >
 
       <img
         src="assets/cover/self-perception.png"
@@ -56,17 +64,35 @@
       <img
         src="assets/cover/the idea marinade.png"
         alt="the idea marinade"
-        class="layout-item zine-cover"
+        class="layout-item zine-cover layout-draggable"
         data-layout-id="idea-marinade"
         data-zine="the idea marinade"
+        data-draggable="true"
         draggable="false"
       >
       <img
         src="assets/cover/romanticise the mundane.png"
         alt="romanticise the mundane"
-        class="layout-item zine-cover"
+        class="layout-item zine-cover layout-draggable"
         data-layout-id="romanticise"
         data-zine="romanticise the mundane"
+        data-draggable="true"
+        draggable="false"
+      >
+
+      <img
+        src="assets/cover/about.png"
+        alt="About the creator"
+        class="layout-item about-card layout-draggable"
+        data-layout-id="about"
+        data-draggable="true"
+        draggable="false"
+      >
+      <img
+        src="assets/cover/confessions of an anxious creator.png"
+        alt="confessions of an anxious creator"
+        class="layout-item zine-cover zine-cover--confessions"
+        data-layout-id="confessions"
         draggable="false"
       >
 
@@ -76,6 +102,32 @@
         class="layout-item layout-draggable decoration decoration-plant"
         data-layout-id="plant"
         data-draggable="true"
+        draggable="false"
+        aria-hidden="true"
+      >
+      <img
+        src="assets/decorations/snake-plant.png"
+        alt=""
+        class="layout-item layout-draggable decoration decoration-snake-plant"
+        data-layout-id="snake-plant"
+        data-draggable="true"
+        draggable="false"
+        aria-hidden="true"
+      >
+      <img
+        src="assets/decorations/chinese cat.png"
+        alt=""
+        class="layout-item layout-draggable decoration decoration-chinese-cat"
+        data-layout-id="chinese-cat"
+        data-draggable="true"
+        draggable="false"
+        aria-hidden="true"
+      >
+      <img
+        src="assets/decorations/lamp.png"
+        alt=""
+        class="layout-item decoration decoration-lamp"
+        data-layout-id="lamp"
         draggable="false"
         aria-hidden="true"
       >
@@ -100,6 +152,8 @@
         <img src="assets/decorations/smiling.png" alt="" class="decoration-cat__img decoration-cat__img--smiling" aria-hidden="true">
       </div>
     </div>
+    <!-- In-flow width so .shelf-container overflow-x includes the full artboard (abs.pos. children alone do not always extend scroll width). -->
+    <div class="content-frame-scroll-track" aria-hidden="true"></div>
   </main>
   </div>
 

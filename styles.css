@@ -23,7 +23,20 @@ body {
   font-family: 'Viksjoe Trial', serif;
 }
 
-/* Canvas 1440×1080 – padding 60px both sides */
+/* Homepage: no vertical page scroll — horizontal pan only on .shelf-container. */
+html:has(.shelf-container) {
+  height: 100%;
+  overflow: hidden;
+}
+
+body:has(.shelf-container) {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* Canvas: issue pages 1440 max; homepage homescreen 0:3 is wider (dual shelf). */
 .wrapper {
   max-width: 1440px;
   min-height: 1080px;
@@ -32,13 +45,33 @@ body {
   position: relative;
 }
 
-/* Title frame: 1320×94, padding top 20px (sides 60px from wrapper) */
+/* Homepage: full viewport width; horizontal pan lives on .shelf-container (scroll frame). */
+.wrapper:has(.shelf-container) {
+  max-width: none;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 20px 0 0 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Title frame: 1320×94 — issue pages: 20px top pad inside header; homepage: inset via wrapper */
 .header {
   height: 94px;
   padding: 20px 0 0 0;
   display: flex;
   align-items: center;
   gap: 0;
+}
+
+.wrapper:has(.shelf-container) .header {
+  padding: 0 60px;
 }
 
 /* When title is wrapped in a link (issue page) */
@@ -112,7 +145,7 @@ body {
 }
 
 /*
- * Outer main: offset below header (~145px). All item x/y live in homepage-spec.js.
+ * Outer main: issue pages unchanged. Homepage: content-frame absolutely placed (top 90px, left 160px on artboard).
  */
 .shelf-container {
   position: relative;
@@ -121,16 +154,57 @@ body {
   padding-bottom: 0;
 }
 
+.wrapper:has(.shelf-container) .shelf-container {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding: 0;
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: none;
+  touch-action: pan-x;
+  cursor: grab;
+}
+
+.wrapper:has(.shelf-container) .shelf-container.shelf-container--panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+/* Matches content-frame offset + width from homepage-spec (160 + 2319). */
+.wrapper:has(.shelf-container) .content-frame-scroll-track {
+  width: calc(160px + 2319px);
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Single parent: every zine / decor / shelf is a direct child; positioned via JS from spec */
 .content-frame {
   position: relative;
-  width: 1120px;
-  max-width: min(1120px, 100%);
+  width: 2319px;
+  max-width: none;
   height: 789px;
   margin-left: auto;
   margin-right: auto;
   box-sizing: border-box;
   pointer-events: none;
+  overflow: visible;
+}
+
+.wrapper:has(.shelf-container) .content-frame {
+  position: absolute;
+  left: 160px;
+  top: 90px;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .content-frame .layout-item {
@@ -145,7 +219,7 @@ body {
   object-fit: contain;
   object-position: bottom;
   pointer-events: none;
-  z-index: 0;
+  z-index: 5;
 }
 
 .content-frame .zine-cover {
@@ -154,23 +228,53 @@ body {
   pointer-events: auto;
   user-select: none;
   cursor: pointer;
-  z-index: 10;
 }
 
 /*
- * idea marinade asset is 657×719; spec box ~285.6×357 (~0.80 vs ~0.91 intrinsic).
- * contain left a visible band above the art; cover + bottom matches design frame.
+ * Stacking matches Figma scroll frame 0:4 layer order (back → front):
+ * idea marinade → self-perception → romanticise → books → about → shelves → observations → collection →
+ * confessions → cat → plant / snake-plant / chinese-cat.
  */
 .content-frame .zine-cover[data-layout-id="idea-marinade"] {
-  object-fit: cover;
-  object-position: center bottom;
+  z-index: 1;
+}
+.content-frame .zine-cover[data-layout-id="self-perception"] {
+  z-index: 2;
+}
+.content-frame .zine-cover[data-layout-id="romanticise"] {
+  z-index: 3;
+}
+.content-frame .zine-cover[data-layout-id="observations"] {
+  z-index: 6;
+}
+.content-frame .zine-cover[data-layout-id="collection"] {
+  z-index: 7;
 }
 
-.content-frame .layout-draggable {
+.content-frame .about-card {
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+  z-index: 4;
+}
+
+.content-frame .about-card.layout-draggable {
+  pointer-events: auto;
+}
+
+.content-frame .zine-cover--confessions {
+  z-index: 9;
+}
+
+.content-frame .decoration {
   object-fit: contain;
   object-position: bottom center;
   pointer-events: auto;
   user-select: none;
+}
+
+.content-frame .layout-draggable {
   cursor: grab;
   touch-action: none;
 }
@@ -179,17 +283,37 @@ body {
   cursor: grabbing;
 }
 
-.content-frame .decoration-plant {
-  z-index: 1;
+.content-frame .zine-cover.layout-draggable {
+  cursor: grab;
 }
 
+/*
+ * Foreground props (books → … → lamp): base z-index 200+ so dragged issue covers (JS max 199) stay underneath.
+ * Dragging a prop raises it via script (500+).
+ */
 .content-frame .decoration-books {
-  z-index: 2;
+  z-index: 200;
 }
 
 .content-frame .decoration-cat {
   overflow: hidden;
-  z-index: 3;
+  z-index: 201;
+}
+
+.content-frame .decoration-plant {
+  z-index: 202;
+}
+
+.content-frame .decoration-snake-plant {
+  z-index: 203;
+}
+
+.content-frame .decoration-chinese-cat {
+  z-index: 204;
+}
+
+.content-frame .decoration-lamp {
+  z-index: 205;
 }
 
 .content-frame .decoration-cat .decoration-cat__img {
