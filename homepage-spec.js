@@ -15,11 +15,11 @@ var HOMEPAGE_LAYOUT_SPEC = {
   'idea-marinade': { x: 371, y: 330, width: 324.4564208984375, height: 356.99725341796875 },
   romanticise: { x: 725, y: 400, width: 329.6084289550781, height: 288.4058532714844 },
   'snake-plant': { x: 226, y: 261, width: 167.28521728515625, height: 425 },
-  plant: { x: 1284, y: 382, width: 327.74786376953125, height: 410.6839904785156 },
+  plant: { x: 1219, y: 383, width: 327.74786376953125, height: 410.6839904785156 },
   lamp: { x: 1999, y: 244, width: 300, height: 635 },
-  books: { x: 67, y: 510, width: 151.69436645507812, height: 179.47854614257812 },
+  books: { x: 116, y: 509, width: 151.69436645507812, height: 179.47854614257812 },
   cat: { x: 634, y: 523, width: 206.00469970703125, height: 180 },
-  'chinese-cat': { x: 1235, y: 517, width: 140, height: 180 }
+  'chinese-cat': { x: 130, y: 409, width: 90, height: 110 }
 };
 
 /** Draggable: delta from HOMEPAGE_LAYOUT_SPEC (includes draggable zine covers). */
