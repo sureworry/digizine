@@ -4,12 +4,9 @@
   var slug = params.get('slug') || '';
   var issue = typeof getIssueBySlug !== 'undefined' ? getIssueBySlug(slug) : null;
 
-  var titleEl = document.getElementById('issue-title');
-
   if (issue) {
     var title = issue.title || slug;
     document.title = title + ' — sharvari\'s digi-zines';
-    if (titleEl) titleEl.textContent = title;
     document.body.setAttribute('data-issue-slug', slug);
 
     var container = document.getElementById('zine-strip-root');
@@ -20,10 +17,11 @@
     ) {
       var strip = createZineStrip({ issue: issue });
       container.appendChild(strip.element);
+      var nPages = strip.element.querySelectorAll('.zine-strip__page').length;
+      container.style.setProperty('--stack-total-n', String(Math.max(1, nPages)));
       setupZineStripInteraction(strip.element, { issue: issue });
     }
   } else {
-    if (titleEl) titleEl.textContent = slug || 'issue';
     document.title = (slug || 'issue') + ' — sharvari\'s digi-zines';
   }
 })();

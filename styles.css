@@ -241,17 +241,6 @@ body {
   color: #000;
 }
 
-.issue-title {
-  font-family: 'Viksjoe Trial', serif;
-  font-weight: 400;
-  font-size: 28px;
-  letter-spacing: 1.4px;
-  text-transform: lowercase;
-  margin: 0;
-  text-align: center;
-  color: #A5A5A5;
-}
-
 .issue-main {
   display: flex;
   justify-content: center;
@@ -270,10 +259,6 @@ body {
 }
 
 /* ========== Horizontal zine reader (issue-scroll only, no leakage) ========== */
-.issue-page--scroll .issue-title {
-  color: #3D3C3C;
-}
-
 .issue-page--scroll .issue-back {
   color: #A5A5A5;
 }
@@ -313,6 +298,15 @@ body {
   margin-left: calc(50% - 50vw);
   min-width: 0;
   overflow: visible;
+  /*
+   * Reserve the closed-stack height so "back to shelf" stays put when toggling open ↔ closed.
+   * Matches .zine-strip--closed .zine-strip__scroller: padding 10+20px + content min-height.
+   * --stack-total-n is set on this element in issue.js / issue-scroll.js.
+   */
+  --zine-strip-stage-lift: 2px;
+  min-height: calc(
+    30px + 520px + (var(--stack-total-n, 1) - 1) * var(--zine-strip-stage-lift) + 16px
+  );
 }
 
 /* Back to shelf: anchored to page layout, not to strip width */

@@ -5,7 +5,6 @@
   var slug = params.get('slug') || '';
   var issue = typeof getIssueBySlug !== 'undefined' ? getIssueBySlug(slug) : null;
 
-  var titleEl = document.getElementById('issue-title');
   var arrowPrev = document.getElementById('issue-arrow-prev');
   var arrowNext = document.getElementById('issue-arrow-next');
 
@@ -17,7 +16,6 @@
   if (issue) {
     var title = issue.title || slug;
     document.title = title + ' — sharvari\'s digi-zines';
-    if (titleEl) titleEl.textContent = title;
     document.body.setAttribute('data-issue-slug', slug);
 
     var container = document.getElementById('zine-viewer');
@@ -32,7 +30,6 @@
       if (arrowNext) arrowNext.addEventListener('click', function () { viewer.nextSpread(); });
     }
   } else {
-    if (titleEl) titleEl.textContent = slug || 'issue';
     document.title = (slug || 'issue') + ' — sharvari\'s digi-zines';
   }
 })();
