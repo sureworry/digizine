@@ -19,7 +19,7 @@ var HOMEPAGE_LAYOUT_SPEC = {
   lamp: { x: 1999, y: 244, width: 300, height: 635 },
   books: { x: 116, y: 509, width: 151.69436645507812, height: 179.47854614257812 },
   cat: { x: 634, y: 523, width: 206.00469970703125, height: 180 },
-  'chinese-cat': { x: 130, y: 409, width: 90, height: 110 }
+  'chinese-cat': { x: 148, y: 409, width: 90, height: 110 }
 };
 
 /** Draggable: delta from HOMEPAGE_LAYOUT_SPEC (includes draggable zine covers). */
