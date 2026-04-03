@@ -9,7 +9,7 @@
 <body>
   <div class="wrapper">
   <header class="header">
-    <h1 class="title">shar's zine shelf</h1>
+    <h1 class="title">sharvari's digi-zines</h1>
     <img src="assets/decorations/flower.png" alt="" class="header-flower" aria-hidden="true">
     <div class="datetime-wrap">
       <p class="datetime-date" id="datetime-date"></p>
@@ -18,8 +18,6 @@
   </header>
 
   <main class="shelf-container">
-    <div class="shelf-scroll" id="shelf-scroll">
-    <div class="shelf-scroll-inner" id="shelf-scroll-inner">
     <div class="content-frame" id="content-frame" aria-label="Homepage scene">
       <img
         src="assets/decorations/shelf.png"
@@ -66,7 +64,7 @@
       <img
         src="assets/cover/the idea marinade.png"
         alt="the idea marinade"
-        class="layout-item zine-cover"
+        class="layout-item zine-cover layout-draggable"
         data-layout-id="idea-marinade"
         data-zine="the idea marinade"
         data-draggable="true"
@@ -75,7 +73,7 @@
       <img
         src="assets/cover/romanticise the mundane.png"
         alt="romanticise the mundane"
-        class="layout-item zine-cover"
+        class="layout-item zine-cover layout-draggable"
         data-layout-id="romanticise"
         data-zine="romanticise the mundane"
         data-draggable="true"
@@ -83,32 +81,32 @@
       >
 
       <img
-        src="assets/cover/confessions of an anxious creator.png"
-        alt="Confessions of an anxious creator"
-        class="layout-item zine-cover decoration decoration-confessions"
-        data-layout-id="confessions"
-        data-zine="confessions of an anxious creator"
-        draggable="false"
-      >
-      <img
-        src="assets/decorations/about.png?v=2"
-        alt="About"
-        class="layout-item layout-draggable decoration decoration-about"
+        src="assets/cover/about.png"
+        alt="About the creator"
+        class="layout-item about-card layout-draggable"
         data-layout-id="about"
         data-draggable="true"
         draggable="false"
       >
       <img
-        src="assets/decorations/lamp.png"
+        src="assets/cover/confessions of an anxious creator.png"
+        alt="confessions of an anxious creator"
+        class="layout-item zine-cover zine-cover--confessions"
+        data-layout-id="confessions"
+        draggable="false"
+      >
+
+      <img
+        src="assets/decorations/plant.png"
         alt=""
-        class="layout-item layout-draggable decoration decoration-lamp"
-        data-layout-id="lamp"
+        class="layout-item layout-draggable decoration decoration-plant"
+        data-layout-id="plant"
         data-draggable="true"
         draggable="false"
         aria-hidden="true"
       >
       <img
-        src="assets/decorations/snake plant.png"
+        src="assets/decorations/snake-plant.png"
         alt=""
         class="layout-item layout-draggable decoration decoration-snake-plant"
         data-layout-id="snake-plant"
@@ -117,11 +115,19 @@
         aria-hidden="true"
       >
       <img
-        src="assets/decorations/plant.png"
+        src="assets/decorations/chinese cat.png"
         alt=""
-        class="layout-item layout-draggable decoration decoration-plant"
-        data-layout-id="plant"
+        class="layout-item layout-draggable decoration decoration-chinese-cat"
+        data-layout-id="chinese-cat"
         data-draggable="true"
+        draggable="false"
+        aria-hidden="true"
+      >
+      <img
+        src="assets/decorations/lamp.png"
+        alt=""
+        class="layout-item decoration decoration-lamp"
+        data-layout-id="lamp"
         draggable="false"
         aria-hidden="true"
       >
@@ -145,18 +151,9 @@
         <img src="assets/decorations/pokerface.png" alt="" class="decoration-cat__img decoration-cat__img--default" aria-hidden="true">
         <img src="assets/decorations/smiling.png" alt="" class="decoration-cat__img decoration-cat__img--smiling" aria-hidden="true">
       </div>
-      <img
-        src="assets/decorations/chinese cat.png"
-        alt=""
-        class="layout-item layout-draggable decoration decoration-chinese-cat"
-        data-layout-id="chinese-cat"
-        data-draggable="true"
-        draggable="false"
-        aria-hidden="true"
-      >
     </div>
-    </div>
-    </div>
+    <!-- In-flow width so .shelf-container overflow-x includes the full artboard (abs.pos. children alone do not always extend scroll width). -->
+    <div class="content-frame-scroll-track" aria-hidden="true"></div>
   </main>
   </div>
 
