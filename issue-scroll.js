@@ -6,7 +6,7 @@
 
   if (issue) {
     var title = issue.title || slug;
-    document.title = title + ' — sharvari\'s digi-zines';
+    document.title = title + ' — shar\'s zine shelf';
     document.body.setAttribute('data-issue-slug', slug);
 
     var container = document.getElementById('zine-strip-root');
@@ -22,6 +22,6 @@
       setupZineStripInteraction(strip.element, { issue: issue });
     }
   } else {
-    document.title = (slug || 'issue') + ' — sharvari\'s digi-zines';
+    document.title = (slug || 'issue') + ' — shar\'s zine shelf';
   }
 })();

@@ -477,8 +477,8 @@ body:has(.shelf-container) {
 }
 
 /*
- * Figma zine-page-step2 (node 15:2): strip top y=252px; cards 520×520; gap strip→“go back” 102px.
- * Header reserve = 114px → margin below header = 252 − 114 = 138px.
+ * Figma zine-page-step2 (node 15:2): strip top y=252px; cards 520×520; nominal gap strip→“go back” 62px.
+ * Issue block margin-top 138px (strip 40px higher than 178px); gap 102px so strip→link = 62+40 — “back to shelf” Y unchanged.
  */
 .issue-page--scroll .issue-zine-frame--scroll {
   display: flex;
@@ -495,9 +495,12 @@ body:has(.shelf-container) {
   overflow-y: visible;
 }
 
-/* Grows with frame; top-align strip (Figma) — do not vertically center the deck */
+/*
+ * No flex-grow — otherwise the strip column eats all vertical space and “back to shelf”
+ * stays pinned to the bottom; gap between strip and link would barely move.
+ */
 .issue-page--scroll .zine-strip-wrap {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -513,7 +516,7 @@ body:has(.shelf-container) {
  * Single full-width cell: stretch the strip; align-content:start so open/closed share the same top edge (Figma y=252).
  */
 .issue-page--scroll .zine-strip-root {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
@@ -611,9 +614,9 @@ body:has(.shelf-container) {
   --zine-stack-lift: 2px;
   width: auto;
   min-width: 200px;
-  /* Cover/page boxes stay 520px tall; stack needs extra height for overlap (Figma −400px), not for shifting the cover top */
-  min-height: calc(520px + (var(--stack-total-n, 1) - 1) * var(--zine-stack-lift));
-  height: auto;
+  /* Same 520px band as open — avoids Y jump when toggling; stack overlap paints within this box */
+  min-height: 520px;
+  height: 520px;
   margin: 0;
   /* Horizontal only — vertical padding would change closed vs open alignment */
   padding: 0 14px;
