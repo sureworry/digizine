@@ -4,6 +4,58 @@
   var TAP_MOVE_THRESHOLD = 20;
   var TAP_SCROLL_THRESHOLD = 8;
 
+  // #region agent log
+  function agentDbgLayout(hypothesisId, message, phase, opening) {
+    var de = document.documentElement;
+    var body = document.body;
+    var se = document.scrollingElement;
+    var wrap = document.querySelector('.issue-wrapper');
+    var wrapLeft = wrap ? wrap.getBoundingClientRect().left : null;
+    var root = document.querySelector('.zine-strip-root');
+    var rootLeft = root ? root.getBoundingClientRect().left : null;
+    var data = {
+      phase: phase,
+      opening: opening,
+      innerWidth: window.innerWidth,
+      deClientWidth: de.clientWidth,
+      innerMinusDeClient: window.innerWidth - de.clientWidth,
+      deScrollHeight: de.scrollHeight,
+      innerHeight: window.innerHeight,
+      overflowing: de.scrollHeight > window.innerHeight,
+      deOverflowY: de ? getComputedStyle(de).overflowY : '',
+      bodyOverflowY: body ? getComputedStyle(body).overflowY : '',
+      scrollingEl: se ? se.tagName : '',
+      seClientWidth: se ? se.clientWidth : null,
+      wrapLeft: wrapLeft,
+      rootLeft: rootLeft,
+      bodyPaddingRight: body ? getComputedStyle(body).paddingRight : '',
+    };
+    fetch('http://127.0.0.1:7550/ingest/1c972698-8f1d-4220-b1fb-7fbaaf3c95d9', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': 'd00a6a',
+      },
+      body: JSON.stringify({
+        sessionId: 'd00a6a',
+        location: 'issue-strip-interaction.js:agentDbgLayout',
+        message: message,
+        data: data,
+        timestamp: Date.now(),
+        hypothesisId: hypothesisId,
+      }),
+    }).catch(function () {});
+    try {
+      var key = 'dbgLayoutIssue_d00a6a';
+      var prev = JSON.parse(sessionStorage.getItem(key) || '[]');
+      if (!Array.isArray(prev)) prev = [];
+      data.runId = 'post-vw-calc-body-padding';
+      prev.push(data);
+      sessionStorage.setItem(key, JSON.stringify(prev.slice(-40)));
+    } catch (e) {}
+  }
+  // #endregion
+
   function setupZineStripInteraction(stripEl, options) {
     var issue = options.issue;
     var scrollerEl = stripEl.querySelector('.zine-strip__scroller');
@@ -28,6 +80,10 @@
       var pages = getPages(strip);
       if (pages.length === 0) return;
 
+      // #region agent log
+      agentDbgLayout('H1-H5', 'flip start', 'start', opening);
+      // #endregion
+
       if (reduceMotion) {
         if (opening) {
           if (typeof clearZineStackScrollerWidth === 'function') {
@@ -47,6 +103,11 @@
           strip.scrollLeft = 0;
         }
         syncChrome(strip, opening);
+        // #region agent log
+        requestAnimationFrame(function () {
+          agentDbgLayout('H1-H5', 'flip end reducedMotion', 'after-rAF', opening);
+        });
+        // #endregion
         return;
       }
 
@@ -115,9 +176,20 @@
           pages[n].style.transition = '';
           pages[n].style.transform = '';
         }
+        // #region agent log
+        agentDbgLayout('H1-H5', 'flip end transition cleanup', 't+600ms', opening);
+        // #endregion
       }, 600);
 
       syncChrome(strip, opening);
+
+      // #region agent log
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          agentDbgLayout('H1-H5', 'flip after class toggle rAF2', 'post-toggle-rAF2', opening);
+        });
+      });
+      // #endregion
     }
 
     function syncChrome(strip, isOpen) {
@@ -246,6 +318,10 @@
     if (typeof scheduleZineStackLayout === 'function') {
       scheduleZineStackLayout(stripEl);
     }
+
+    // #region agent log
+    agentDbgLayout('H1-H5', 'baseline after strip setup', 'baseline', null);
+    // #endregion
 
     var resizeTimer;
     window.addEventListener('resize', function () {

@@ -4,7 +4,12 @@ var HOMEPAGE_ASSETS = [
   { id: 'observations as a introvert', type: 'zine', slug: 'observations-as-an-introvert' },
   { id: 'collection of stillherestilllife', type: 'zine', slug: 'stillherestilllife' },
   { id: 'the idea marinade', type: 'zine', slug: 'idea-marinade' },
-  { id: 'romanticise the mundane', type: 'zine', slug: 'romaticise-the-mundane' }
+  { id: 'romanticise the mundane', type: 'zine', slug: 'romaticise-the-mundane' },
+  {
+    id: 'confessions of an anxious creator',
+    type: 'zine',
+    slug: 'confessions-of-an-anxious-creator'
+  }
 ];
 
 /** Draggable: delta from HOMEPAGE_LAYOUT_SPEC. */
@@ -14,6 +19,7 @@ var dragOffsets = {
   'chinese-cat': { dx: 0, dy: 0 },
   books: { dx: 0, dy: 0 },
   cat: { dx: 0, dy: 0 },
+  lamp: { dx: 0, dy: 0 },
   'idea-marinade': { dx: 0, dy: 0 },
   romanticise: { dx: 0, dy: 0 },
   about: { dx: 0, dy: 0 }
@@ -366,11 +372,11 @@ window.digizineExportLayout = function () {
   var active = null;
   var DRAG_MOVE_PX = 8;
 
-  /** Draggable zine covers stay below foreground props (CSS z-index ≥ 200); cap inline z-index at 199. */
-  var Z_COVER_DRAG_MAX = 199;
-  var zCoverDrag = 99;
+  /** Issues stay below shelves (CSS z-index 50); drag stacking among issues only, max 49. */
+  var Z_ISSUE_DRAG_MAX = 49;
+  var zIssueDrag = 15;
 
-  /** plant, cat, chinese-cat, snake-plant, lamp, books — always above zine covers; drag uses 500+. */
+  /** plant, cat, chinese-cat, snake-plant, lamp, books — above shelf; drag uses 500+. */
   var FOREGROUND_DECORATION_IDS = {
     plant: true,
     cat: true,
@@ -381,22 +387,15 @@ window.digizineExportLayout = function () {
   };
   var zForegroundDrag = 499;
 
-  var zAboutDrag = 299;
-
   function bringToFront(el, id) {
-    if (el.classList.contains('zine-cover')) {
-      zCoverDrag = Math.min(zCoverDrag + 1, Z_COVER_DRAG_MAX);
-      el.style.zIndex = String(zCoverDrag);
+    if (el.classList.contains('zine-cover') || id === 'about') {
+      zIssueDrag = Math.min(zIssueDrag + 1, Z_ISSUE_DRAG_MAX);
+      el.style.zIndex = String(zIssueDrag);
       return;
     }
     if (id && FOREGROUND_DECORATION_IDS[id]) {
       zForegroundDrag++;
       el.style.zIndex = String(zForegroundDrag);
-      return;
-    }
-    if (id === 'about') {
-      zAboutDrag++;
-      el.style.zIndex = String(zAboutDrag);
       return;
     }
     zForegroundDrag++;

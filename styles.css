@@ -23,10 +23,21 @@ body {
   font-family: 'Viksjoe Trial', serif;
 }
 
+/*
+ * Reserve space for the vertical scrollbar so width doesn’t jump when scrollability toggles.
+ * Homepage shelf uses the same stable gutter (see html:has(.shelf-container)) for L1↔L2 alignment.
+ */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 /* Homepage: no vertical page scroll — horizontal pan only on .shelf-container. */
 html:has(.shelf-container) {
   height: 100%;
   overflow: hidden;
+  /* Match default html scrollbar-gutter so header/content width matches issue pages (L1↔L2). */
+  scrollbar-gutter: stable;
 }
 
 body:has(.shelf-container) {
@@ -51,7 +62,8 @@ body:has(.shelf-container) {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding: 20px 0 0 0;
+  /* In-flow space below fixed .header (20px inset + 94px band — same as issue page). */
+  padding: 114px 0 0 0;
   min-height: 0;
   height: 100%;
   max-height: 100%;
@@ -61,7 +73,7 @@ body:has(.shelf-container) {
   box-sizing: border-box;
 }
 
-/* Title frame: 1320×94 — issue pages: 20px top pad inside header; homepage: inset via wrapper */
+/* Title frame: 1320×94 — fixed chrome uses padding in .wrapper:has(.shelf-container) .header / .issue-page--scroll .header */
 .header {
   height: 94px;
   padding: 20px 0 0 0;
@@ -70,15 +82,39 @@ body:has(.shelf-container) {
   gap: 0;
 }
 
-.wrapper:has(.shelf-container) .header {
-  padding: 0 60px;
+/* Fixed site header — identical geometry on homepage + issue (viewport; L1↔L2). */
+.wrapper:has(.shelf-container) .header,
+.issue-page--scroll .header {
+  position: fixed;
+  top: 20px;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  margin: 0;
+  padding: 20px 60px 0;
+  height: 94px;
+  box-sizing: border-box;
+  background: #efefef;
+  width: auto;
+  max-width: none;
 }
 
-/* When title is wrapped in a link (issue page) */
+/* When title is wrapped in a link (issue page) — match <h1 class="title"> on index (UA h1 + inline <a> otherwise jog vs shelf) */
 .header__title-wrap {
   flex: 1;
   min-width: 0;
   margin: 0;
+  padding: 0;
+  font-family: 'Viksjoe Trial', serif;
+  font-size: 28px;
+  line-height: normal;
+  font-weight: 400;
+  letter-spacing: 1.4px;
+  text-transform: lowercase;
+}
+
+.header__title-wrap > .title {
+  display: block;
 }
 
 /* When title is direct child (index page) */
@@ -215,11 +251,12 @@ body:has(.shelf-container) {
   box-sizing: border-box;
 }
 
+/* Shelves sit above all issues (zines / about); decorations use z-index 200+ */
 .content-frame .layout-shelf {
   object-fit: contain;
   object-position: bottom;
   pointer-events: none;
-  z-index: 5;
+  z-index: 50;
 }
 
 .content-frame .zine-cover {
@@ -231,9 +268,8 @@ body:has(.shelf-container) {
 }
 
 /*
- * Stacking matches Figma scroll frame 0:4 layer order (back → front):
- * idea marinade → self-perception → romanticise → books → about → shelves → observations → collection →
- * confessions → cat → plant / snake-plant / chinese-cat.
+ * Issues (zines + about): z-index 1–9 — always below shelves (50). Relative order preserved.
+ * Shelves: 50. Decorations: 200+ (always above shelf). Dragged props: script sets 500+.
  */
 .content-frame .zine-cover[data-layout-id="idea-marinade"] {
   z-index: 1;
@@ -288,8 +324,8 @@ body:has(.shelf-container) {
 }
 
 /*
- * Foreground props (books → … → lamp): base z-index 200+ so dragged issue covers (JS max 199) stay underneath.
- * Dragging a prop raises it via script (500+).
+ * Foreground props (books → … → lamp): base z-index 200+ (above shelves at 50).
+ * Dragging a prop raises it via script (500+). Issues stay below shelf (CSS & drag max 49).
  */
 .content-frame .decoration-books {
   z-index: 200;
@@ -406,10 +442,15 @@ body:has(.shelf-container) {
   color: #3D3C3C;
 }
 
-/* Fill viewport below header so the strip area can grow and center the stack */
+/* Fill viewport below fixed .header (20px inset + 94px band — same as homepage .wrapper) */
 .issue-page--scroll .issue-wrapper {
   display: flex;
   flex-direction: column;
+  /* Let expanded strip use full viewport width (minus padding); 1440 cap was clipping the open row */
+  max-width: none;
+  width: 100%;
+  overflow-x: visible;
+  padding-top: 114px;
 }
 
 .issue-page--scroll .issue-scroll-main {
@@ -421,6 +462,7 @@ body:has(.shelf-container) {
   min-width: 0;
   min-height: 0;
   width: 100%;
+  overflow-x: visible;
 }
 
 .issue-page--scroll .issue-zine-frame--scroll {
@@ -429,11 +471,12 @@ body:has(.shelf-container) {
   align-items: stretch;
   flex: 1 1 auto;
   width: 100%;
-  max-width: 100%;
+  max-width: none;
   min-width: 0;
   min-height: 0;
   gap: 40px;
   margin-top: 120px;
+  overflow-x: visible;
 }
 
 /* Grows with frame: gives #zine-strip-root vertical room to center the deck */
@@ -444,23 +487,29 @@ body:has(.shelf-container) {
   min-width: 0;
   min-height: 0;
   width: 100%;
-  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 /*
- * Center the deck in the slot: grid + place-items is more reliable than flex here.
- * Use 100% width (not 100vw) so we don’t shift when a vertical scrollbar eats width.
+ * Single full-width cell: stretch the strip to the same box in open + closed.
+ * (place-items: center shrank the strip to content when collapsed → horizontal jump.)
  */
 .issue-page--scroll .zine-strip-root {
   flex: 1 1 auto;
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  justify-items: stretch;
+  align-items: stretch;
   align-content: center;
   width: 100%;
   margin-left: 0;
   min-width: 0;
   min-height: 0;
-  overflow: visible;
+  position: relative;
+  overflow-x: visible;
+  overflow-y: visible;
 }
 
 /* Back to shelf: anchored to page layout, not to strip width */
@@ -474,29 +523,34 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip {
   min-width: 0;
   pointer-events: none;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   outline: none;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--closed {
-  display: block;
   grid-column: 1;
   grid-row: 1;
-  width: max-content;
+  /* Same outer rectangle as open: full width of root; center the stack inside */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
   max-width: 100%;
-  justify-self: center;
-  align-self: center;
+  min-width: 0;
+  justify-self: stretch;
+  align-self: stretch;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--open {
-  display: block;
   grid-column: 1;
   grid-row: 1;
-  place-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: 100%;
   max-width: none;
   min-width: 0;
+  justify-self: stretch;
+  align-self: stretch;
 }
 
 /* Interactive + a11y focus live on content-sized scroller (stack / strip row) */
@@ -510,15 +564,26 @@ body:has(.shelf-container) {
   border-radius: 4px;
 }
 
-.issue-page--scroll .zine-strip::-webkit-scrollbar {
-  display: none;
-}
-
-/* —— Closed: stacked deck, no horizontal scroll —— */
+/* —— Closed: stacked deck — horizontal track space matches expanded (no Y jump when toggling) —— */
 .issue-page--scroll .zine-strip--closed {
-  overflow: hidden;
+  /* Same scroll-container model as open so scrollbar-gutter reserves one stable band */
+  overflow-x: scroll;
+  overflow-y: hidden;
+  /* Reserve space for horizontal scrollbar so open/close doesn’t shift the deck vertically */
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* No useful horizontal scroll when collapsed; pan-y still applies to stack */
+  overscroll-behavior-x: none;
   touch-action: pan-y;
   -webkit-overflow-scrolling: auto;
+}
+
+/* Hide horizontal scrollbar visually in both states; gutter / layout stays reserved where supported */
+.issue-page--scroll .zine-strip.zine-strip--closed::-webkit-scrollbar,
+.issue-page--scroll .zine-strip.zine-strip--open::-webkit-scrollbar {
+  display: none;
+  height: 0;
 }
 
 /*
@@ -600,6 +665,10 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip--open {
   overflow-x: auto;
   overflow-y: hidden;
+  /* Match closed strip so gutter is reserved whether or not the bar is painted */
+  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   cursor: default;
