@@ -536,6 +536,20 @@ body:has(.shelf-container) {
   text-align: center;
 }
 
+/*
+ * Outer: overflow visible on both axes so drop-shadow / strip aren’t clipped by scroll pairing.
+ * Inner .zine-strip: overflow hidden; scrollLeft is driven by JS/wheel (no overflow auto/scroll).
+ */
+.issue-page--scroll .zine-strip-outer {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: stretch;
+  align-self: start;
+  overflow: visible;
+  width: 100%;
+  min-width: 0;
+}
+
 /* Strip: closed stack is shrink-to-content + centered in #zine-strip-root; open uses full width to scroll */
 .issue-page--scroll .zine-strip {
   min-width: 0;
@@ -544,12 +558,10 @@ body:has(.shelf-container) {
   /* Room below cards so filter: drop-shadow isn’t clipped at the bottom edge */
   padding-bottom: 40px;
   box-sizing: border-box;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--closed {
-  grid-column: 1;
-  grid-row: 1;
   /* Same outer rectangle as open: full width; top-align stack (no Y shift on toggle) */
   display: flex;
   justify-content: center;
@@ -557,21 +569,15 @@ body:has(.shelf-container) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  justify-self: stretch;
-  align-self: start;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--open {
-  grid-column: 1;
-  grid-row: 1;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   width: 100%;
   max-width: none;
   min-width: 0;
-  justify-self: stretch;
-  align-self: start;
 }
 
 /* Interactive + a11y focus live on content-sized scroller (stack / strip row) */
@@ -587,26 +593,12 @@ body:has(.shelf-container) {
 
 /* —— Closed: stacked deck — horizontal track space matches expanded (no Y jump when toggling) —— */
 .issue-page--scroll .zine-strip--closed {
-  /* Same scroll-container model as open so scrollbar-gutter reserves one stable band */
-  overflow-x: scroll;
-  /* was overflow-y: hidden — clipped stacked page box-shadows at the bottom */
-  overflow-y: visible;
-  /* Reserve space for horizontal scrollbar so open/close doesn’t shift the deck vertically */
-  scrollbar-gutter: stable;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  /* No useful horizontal scroll when collapsed; pan-y still applies to stack */
+  overflow: hidden;
   overscroll-behavior-x: none;
   touch-action: pan-y;
-  -webkit-overflow-scrolling: auto;
 }
 
-/* Hide horizontal scrollbar visually in both states; gutter / layout stays reserved where supported */
-.issue-page--scroll .zine-strip.zine-strip--closed::-webkit-scrollbar,
-.issue-page--scroll .zine-strip.zine-strip--open::-webkit-scrollbar {
-  display: none;
-  height: 0;
-}
+/* Hidden overflow: no scrollbar pseudo-elements needed */
 
 /*
  * Stacked deck: same page box + image rules as open; only position/overlap differs.
@@ -688,12 +680,7 @@ body:has(.shelf-container) {
 
 /* —— Open: horizontal spread + scroll —— */
 .issue-page--scroll .zine-strip--open {
-  overflow-x: auto;
-  overflow-y: visible;
-  /* Match closed strip so gutter is reserved whether or not the bar is painted */
-  scrollbar-gutter: stable;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overflow: hidden;
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   cursor: default;
