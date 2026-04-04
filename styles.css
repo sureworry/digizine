@@ -548,7 +548,7 @@ body:has(.shelf-container) {
 
   /*
    * First shelf row: one flex column so cover (incl. PNG shadow/backing) + cat + plank center as a unit.
-   * MOBILE_HOMEPAGE_LAYOUT_SPEC romanticise y=91 anchors the block; JS skips layout for these ids on mobile.
+   * MOBILE_HOMEPAGE_LAYOUT_SPEC romanticise y=51 anchors the block; JS skips layout for these ids on mobile.
    */
   .wrapper:has(.shelf-container) .mobile-first-shelf-group {
     display: flex;
@@ -558,7 +558,7 @@ body:has(.shelf-container) {
     width: 100%;
     position: absolute;
     left: 0;
-    top: 91px;
+    top: 51px;
     padding: 0 24px;
     box-sizing: border-box;
     pointer-events: none;
