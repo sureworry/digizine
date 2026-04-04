@@ -123,7 +123,9 @@ body:has(.shelf-container) {
 }
 
 .header__title-wrap > .title {
-  display: block;
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
 }
 
 /* When title is direct child (index page) */
@@ -185,8 +187,10 @@ body:has(.shelf-container) {
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: lowercase;
-  margin: 0;
+  margin: 0 0 0 auto;
   color: #A5A5A5;
+  width: fit-content;
+  max-width: 100%;
 }
 
 /*
@@ -408,6 +412,10 @@ body:has(.shelf-container) {
 .issue-back:hover,
 .issue-nav:hover {
   color: #000;
+}
+
+.issue-back {
+  font-size: 32px;
 }
 
 .issue-title {
