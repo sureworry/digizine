@@ -1,0 +1,28 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Digizine: Open desktop (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173/index.html",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "digizine: serve"
+    },
+    {
+      "name": "Digizine: Open mobile preview (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173/preview-mobile.html",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "digizine: serve"
+    },
+    {
+      "name": "Digizine: Open index only (no server task)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173/index.html",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
