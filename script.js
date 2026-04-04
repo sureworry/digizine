@@ -453,23 +453,27 @@ window.digizineExportLayout = function () {
     'chinese-cat': true,
     'snake-plant': true,
     lamp: true,
-    books: true
+    books: true,
+    coffee: true
   };
   var zForegroundDrag = 499;
+  /** Matches .wrapper:has(.shelf-container) .header / .issue-page--scroll .header { z-index } in styles.css */
+  var HOMEPAGE_HEADER_Z_INDEX = 2000;
+  var HOMEPAGE_DRAG_Z_INDEX_CAP = HOMEPAGE_HEADER_Z_INDEX - 1;
 
   function bringToFront(el, id) {
     if (el.classList.contains('zine-cover') || id === 'about') {
       zIssueDrag = Math.min(zIssueDrag + 1, Z_ISSUE_DRAG_MAX);
-      el.style.zIndex = String(zIssueDrag);
+      el.style.zIndex = String(Math.min(zIssueDrag, HOMEPAGE_DRAG_Z_INDEX_CAP));
       return;
     }
     if (id && FOREGROUND_DECORATION_IDS[id]) {
       zForegroundDrag++;
-      el.style.zIndex = String(zForegroundDrag);
+      el.style.zIndex = String(Math.min(zForegroundDrag, HOMEPAGE_DRAG_Z_INDEX_CAP));
       return;
     }
     zForegroundDrag++;
-    el.style.zIndex = String(zForegroundDrag);
+    el.style.zIndex = String(Math.min(zForegroundDrag, HOMEPAGE_DRAG_Z_INDEX_CAP));
   }
 
   function clientPoint(e) {
