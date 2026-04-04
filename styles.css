@@ -152,6 +152,16 @@ body:has(.shelf-container) {
   color: #000;
 }
 
+/* L2: same <h1 class="title"> as homepage; link wraps title-stack */
+.header > .title > a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.header > .title > a:hover {
+  color: #000;
+}
+
 .header-flower {
   grid-column: 2;
   justify-self: center;
@@ -421,6 +431,15 @@ body:has(.shelf-container) {
   content: ' ';
 }
 
+/*
+ * L2 issue reader defaults (desktop). Mobile overrides in @media (max-width: 768px) below — must follow base.
+ */
+.issue-page--scroll {
+  --zine-stack-gap: -400px;
+  --zine-page-height: 520px;
+  --zine-open-padding-x: 200px;
+}
+
 /* ========== Homepage mobile (Figma node 58:103) ========== */
 @media (max-width: 768px) {
   header {
@@ -439,10 +458,12 @@ body:has(.shelf-container) {
   }
 
   /*
-   * Horizontal overflow must stay visible: artboard uses negative x / wide assets; overflow-x: hidden
-   * clips the sides (this was never intentionally “removed” — the mobile block shipped with hidden).
+   * Horizontal overflow must stay visible: artboard uses negative x / wide assets.
+   * L2: do not use overflow:hidden on .issue-wrapper — it clips both axes and cuts the strip, shadows, and
+   * any bleed past the padded box (desktop L2 uses visible on wrapper). Page scroll stays on html.
    */
-  html:has(.shelf-container) {
+  html:has(.shelf-container),
+  html:has(.issue-page--scroll) {
     height: auto;
     min-height: 100%;
     overflow-y: auto;
@@ -455,13 +476,15 @@ body:has(.shelf-container) {
     -ms-overflow-style: none;
   }
 
-  html:has(.shelf-container)::-webkit-scrollbar {
+  html:has(.shelf-container)::-webkit-scrollbar,
+  html:has(.issue-page--scroll)::-webkit-scrollbar {
     display: none;
     width: 0;
     height: 0;
   }
 
-  body:has(.shelf-container) {
+  body:has(.shelf-container),
+  body:has(.issue-page--scroll) {
     height: auto;
     min-height: 100%;
     overflow-y: visible;
@@ -470,6 +493,7 @@ body:has(.shelf-container) {
 
   /*
    * Header sits in normal flow for top offset: main gets padding-top = header outer height so content never scrolls under it.
+   * Homepage wrapper only here — L2 .issue-wrapper is split below (no document scroll; min-height 844px).
    */
   .wrapper:has(.shelf-container) {
     /* Matches fixed .header outer height (min-height + padding incl. 10px bottom). */
@@ -485,7 +509,24 @@ body:has(.shelf-container) {
     box-sizing: border-box;
   }
 
-  .wrapper:has(.shelf-container) .header {
+  .issue-page--scroll .issue-wrapper {
+    --mobile-header-height: 82px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 24px 32px;
+    min-height: 844px;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    overflow-x: visible;
+    overflow-y: visible;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wrapper:has(.shelf-container) .header,
+  .issue-page--scroll .header {
     position: fixed;
     top: 0;
     left: 0;
@@ -500,18 +541,22 @@ body:has(.shelf-container) {
     background: transparent;
   }
 
-  .wrapper:has(.shelf-container) .header > .title {
+  .wrapper:has(.shelf-container) .header > .title,
+  .issue-page--scroll .header > .title {
     font-size: 20px;
     letter-spacing: 1px;
   }
 
-  .wrapper:has(.shelf-container) .header-flower {
+  .wrapper:has(.shelf-container) .header-flower,
+  .issue-page--scroll .header-flower {
     width: 52px;
     height: 52px;
   }
 
   .wrapper:has(.shelf-container) .datetime-date,
-  .wrapper:has(.shelf-container) .datetime-time {
+  .wrapper:has(.shelf-container) .datetime-time,
+  .issue-page--scroll .datetime-date,
+  .issue-page--scroll .datetime-time {
     font-size: 20px;
     letter-spacing: 1px;
   }
@@ -523,6 +568,9 @@ body:has(.shelf-container) {
     overflow-x: visible;
     overflow-y: visible;
     touch-action: manipulation;
+  }
+
+  .wrapper:has(.shelf-container) .shelf-container {
     cursor: default;
     flex: 0 0 auto;
   }
@@ -635,10 +683,91 @@ body:has(.shelf-container) {
   }
 
   /*
-   * Horizontal scrollbar only: do not set overflow-x on html, .wrapper, .shelf-container, or #content-frame.
-   * (Overflowing art may still paint past the viewport edge; this only suppresses the x scrollbar.)
+   * L2 issue reader — Figma node 66:89 (mobile-view-L2): 390×844, cards 218×218, strip top y=293,
+   * “back to shelf” y=704. Stack gap −167.692px = desktop −400 scaled by 218/520 (same inline fan as web).
+   * Open strip horizontal inset matches web model: symmetric --zine-open-padding-x (scaled for mobile).
    */
-  body {
+  .issue-page--scroll {
+    --zine-stack-gap: -167.692px;
+    --zine-page-height: 218px;
+    --zine-open-padding-x: 84px;
+  }
+
+  /* L2: strip scrolls horizontally only; main fills viewport below header and centers the frame */
+  .issue-page--scroll .issue-scroll-main {
+    padding-top: var(--mobile-header-height);
+    z-index: 0;
+    isolation: isolate;
+    touch-action: manipulation;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .issue-page--scroll .issue-zine-frame--scroll.zine-inner {
+    flex: 0 1 auto;
+    margin-top: 0;
+    min-height: 0;
+    gap: 0;
+    transform: translateY(170px);
+  }
+
+  /*
+   * Same strip layout as web: full-width .zine-strip--closed + justify-content:center centers the scroller.
+   * Touch: horizontal pan needs a scrollable overflow (desktop uses hidden + wheel/JS).
+   */
+  .issue-page--scroll .zine-inner .zine-strip.zine-strip--open {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .issue-page--scroll .zine-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .issue-page--scroll .zine-strip {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  /* Figma mobile-view-L2: “back to shelf” y=704px, black link — desktop keeps main greys + in-flow link */
+  .issue-page--scroll .issue-back {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 704px;
+    bottom: auto;
+    z-index: 2100;
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    letter-spacing: 1px;
+    pointer-events: auto;
+    color: #000;
+  }
+
+  .issue-page--scroll .issue-back:hover {
+    color: #000;
+  }
+
+  .issue-page--scroll .zine-strip__page.zine-strip__page--text {
+    min-width: 0;
+    max-width: min(320px, calc(100vw - 48px));
+    padding: 0.75rem;
+    font-size: 14px;
+  }
+
+  /*
+   * Homepage only: suppress horizontal page scrollbar (do not use bare `body` — L2 needs overflow-x visible).
+   */
+  body:has(.shelf-container) {
     overflow-x: hidden;
   }
 }
@@ -709,14 +838,6 @@ body:has(.shelf-container) {
   color: #3D3C3C;
 }
 
-.issue-page--scroll .issue-back {
-  color: #A5A5A5;
-}
-
-.issue-page--scroll .issue-back:hover {
-  color: #3D3C3C;
-}
-
 /* Fill viewport below fixed .header (20px inset + 94px band — same as homepage .wrapper) */
 .issue-page--scroll .issue-wrapper {
   display: flex;
@@ -724,9 +845,23 @@ body:has(.shelf-container) {
   /* Let expanded strip use full viewport width (minus padding); 1440 cap was clipping the open row */
   max-width: none;
   width: 100%;
-  overflow-x: visible;
-  overflow-y: visible;
-  padding-top: 114px;
+}
+
+@media (min-width: 769px) {
+  .issue-page--scroll .issue-wrapper {
+    padding-top: 114px;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  /* main branch L2 link treatment (mobile uses fixed + black in max-width block) */
+  .issue-page--scroll .issue-back {
+    color: #a5a5a5;
+  }
+
+  .issue-page--scroll .issue-back:hover {
+    color: #3d3c3c;
+  }
 }
 
 .issue-page--scroll .issue-scroll-main {
@@ -738,8 +873,15 @@ body:has(.shelf-container) {
   min-width: 0;
   min-height: 0;
   width: 100%;
+  /* No clip on main — strip shadows / horizontal fan can extend (L2 mobile wrapper uses visible overflow too). */
   overflow-x: visible;
   overflow-y: visible;
+}
+
+@media (min-width: 769px) {
+  .issue-page--scroll .issue-scroll-main {
+    gap: 122px;
+  }
 }
 
 /*
@@ -755,10 +897,14 @@ body:has(.shelf-container) {
   max-width: none;
   min-width: 0;
   min-height: 0;
-  gap: 122px;
-  margin-top: 118px;
   overflow-x: visible;
   overflow-y: visible;
+}
+
+@media (min-width: 769px) {
+  .issue-page--scroll .issue-zine-frame--scroll {
+    margin-top: 118px;
+  }
 }
 
 /*
@@ -833,8 +979,8 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip.zine-strip--closed {
   /* Same outer rectangle as open: full width; top-align stack (no Y shift on toggle) */
   display: flex;
-  justify-content: center;
   align-items: flex-start;
+  justify-content: center;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -880,9 +1026,9 @@ body:has(.shelf-container) {
   --zine-stack-lift: 2px;
   width: auto;
   min-width: 200px;
-  /* Same 520px band as open — avoids Y jump when toggling; stack overlap paints within this box */
-  min-height: 520px;
-  height: 520px;
+  /* Same band height as open — avoids Y jump when toggling; stack overlap paints within this box */
+  min-height: var(--zine-page-height);
+  height: var(--zine-page-height);
   margin: 0;
   /* Horizontal only — vertical padding would change closed vs open alignment */
   padding: 0 14px;
@@ -896,7 +1042,7 @@ body:has(.shelf-container) {
   filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
 }
 
-/* Same intrinsic sizing as open row: width auto, max-width none, height 520 */
+/* Same intrinsic sizing as open row: width auto, max-width none */
 .issue-page--scroll .zine-strip--closed .zine-strip__page {
   position: absolute;
   left: var(--stack-left, 0px);
@@ -905,7 +1051,7 @@ body:has(.shelf-container) {
   width: auto;
   max-width: none;
   min-width: 0;
-  height: 520px;
+  height: var(--zine-page-height);
   margin: 0;
   padding: 0;
   z-index: calc(var(--stack-total) - var(--page-index));
@@ -944,7 +1090,7 @@ body:has(.shelf-container) {
 /* Text pages: same min width as open strip */
 .issue-page--scroll .zine-strip__page.zine-strip__page--text {
   min-width: 320px;
-  height: 520px;
+  height: var(--zine-page-height);
 }
 
 /* —— Open: horizontal spread + scroll —— */
@@ -963,12 +1109,12 @@ body:has(.shelf-container) {
   align-items: flex-start;
   position: static;
   width: max-content;
-  /* Match closed: one 520px-tall row (Figma cards 520×520) */
-  min-height: 520px;
-  height: 520px;
+  /* Match closed: one row tall as cards */
+  min-height: var(--zine-page-height);
+  height: var(--zine-page-height);
   margin: 0;
-  padding-left: 200px;
-  padding-right: 200px;
+  padding-left: var(--zine-open-padding-x);
+  padding-right: var(--zine-open-padding-x);
   gap: 0;
 }
 
@@ -984,7 +1130,7 @@ body:has(.shelf-container) {
   flex: 0 0 auto;
   width: auto;
   max-width: none;
-  height: 520px;
+  height: var(--zine-page-height);
   margin: 0;
   z-index: auto;
   transform: none;

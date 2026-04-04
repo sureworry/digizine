@@ -9,8 +9,13 @@
 <body class="issue-page issue-page--scroll">
   <div class="wrapper issue-wrapper">
     <header class="header">
-      <h1 class="header__title-wrap">
-        <a href="index.html" class="title">shar's zine shelf</a>
+      <h1 class="title">
+        <a href="index.html" id="header-title">
+          <span class="title-stack">
+            <span class="title-line">shar's</span>
+            <span class="title-line">zine shelf</span>
+          </span>
+        </a>
       </h1>
       <img src="assets/decorations/flower.png" alt="" class="header-flower" aria-hidden="true">
       <div class="datetime-wrap">
@@ -20,12 +25,12 @@
     </header>
 
     <main class="issue-scroll-main">
-      <div class="issue-zine-frame issue-zine-frame--scroll">
+      <div class="issue-zine-frame issue-zine-frame--scroll zine-inner">
         <div class="zine-strip-wrap">
           <div id="zine-strip-root" class="zine-strip-root"></div>
         </div>
-        <a href="index.html" class="issue-back">back to shelf</a>
       </div>
+      <a href="index.html" class="issue-back">back to shelf</a>
     </main>
   </div>
 
