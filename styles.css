@@ -23,6 +23,10 @@ body {
   font-family: 'Viksjoe Trial', serif;
 }
 
+body.issue-page--scroll {
+  overflow-x: visible;
+}
+
 /*
  * Reserve space for the vertical scrollbar so width doesn’t jump when scrollability toggles.
  * Homepage shelf uses the same stable gutter (see html:has(.shelf-container)) for L1↔L2 alignment.
@@ -30,6 +34,11 @@ body {
 html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
+}
+
+/* Issue reader: horizontal strip / shadows extend past layout — avoid root clipping on the right */
+html:has(.issue-page--scroll) {
+  overflow-x: visible;
 }
 
 /* Homepage: no vertical page scroll — horizontal pan only on .shelf-container. */
@@ -450,6 +459,7 @@ body:has(.shelf-container) {
   max-width: none;
   width: 100%;
   overflow-x: visible;
+  overflow-y: visible;
   padding-top: 114px;
 }
 
@@ -463,8 +473,13 @@ body:has(.shelf-container) {
   min-height: 0;
   width: 100%;
   overflow-x: visible;
+  overflow-y: visible;
 }
 
+/*
+ * Figma zine-page-step2 (node 15:2): strip top y=252px; cards 520×520; gap strip→“go back” 102px.
+ * Header reserve = 114px → margin below header = 252 − 114 = 138px.
+ */
 .issue-page--scroll .issue-zine-frame--scroll {
   display: flex;
   flex-direction: column;
@@ -474,16 +489,19 @@ body:has(.shelf-container) {
   max-width: none;
   min-width: 0;
   min-height: 0;
-  gap: 40px;
-  margin-top: 120px;
+  gap: 102px;
+  margin-top: 138px;
   overflow-x: visible;
+  overflow-y: visible;
 }
 
-/* Grows with frame: gives #zine-strip-root vertical room to center the deck */
+/* Grows with frame; top-align strip (Figma) — do not vertically center the deck */
 .issue-page--scroll .zine-strip-wrap {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   min-width: 0;
   min-height: 0;
   width: 100%;
@@ -492,8 +510,7 @@ body:has(.shelf-container) {
 }
 
 /*
- * Single full-width cell: stretch the strip to the same box in open + closed.
- * (place-items: center shrank the strip to content when collapsed → horizontal jump.)
+ * Single full-width cell: stretch the strip; align-content:start so open/closed share the same top edge (Figma y=252).
  */
 .issue-page--scroll .zine-strip-root {
   flex: 1 1 auto;
@@ -501,8 +518,8 @@ body:has(.shelf-container) {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   justify-items: stretch;
-  align-items: stretch;
-  align-content: center;
+  align-items: start;
+  align-content: start;
   width: 100%;
   margin-left: 0;
   min-width: 0;
@@ -524,20 +541,24 @@ body:has(.shelf-container) {
   min-width: 0;
   pointer-events: none;
   outline: none;
+  /* Room below cards so filter: drop-shadow isn’t clipped at the bottom edge */
+  padding-bottom: 40px;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--closed {
   grid-column: 1;
   grid-row: 1;
-  /* Same outer rectangle as open: full width of root; center the stack inside */
+  /* Same outer rectangle as open: full width; top-align stack (no Y shift on toggle) */
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   justify-self: stretch;
-  align-self: stretch;
+  align-self: start;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--open {
@@ -545,12 +566,12 @@ body:has(.shelf-container) {
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   max-width: none;
   min-width: 0;
   justify-self: stretch;
-  align-self: stretch;
+  align-self: start;
 }
 
 /* Interactive + a11y focus live on content-sized scroller (stack / strip row) */
@@ -568,7 +589,8 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip--closed {
   /* Same scroll-container model as open so scrollbar-gutter reserves one stable band */
   overflow-x: scroll;
-  overflow-y: hidden;
+  /* was overflow-y: hidden — clipped stacked page box-shadows at the bottom */
+  overflow-y: visible;
   /* Reserve space for horizontal scrollbar so open/close doesn’t shift the deck vertically */
   scrollbar-gutter: stable;
   scrollbar-width: none;
@@ -593,17 +615,24 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip--closed .zine-strip__scroller {
   display: block;
   position: relative;
+  overflow: visible;
   --zine-stack-lift: 2px;
   width: auto;
   min-width: 200px;
-  min-height: calc(520px + (var(--stack-total-n, 1) - 1) * var(--zine-stack-lift) + 16px);
+  /* Cover/page boxes stay 520px tall; stack needs extra height for overlap (Figma −400px), not for shifting the cover top */
+  min-height: calc(520px + (var(--stack-total-n, 1) - 1) * var(--zine-stack-lift));
   height: auto;
   margin: 0;
-  /* Symmetric horizontal padding so the stack isn’t optically shifted */
-  padding: 10px 14px 20px 14px;
+  /* Horizontal only — vertical padding would change closed vs open alignment */
+  padding: 0 14px;
   box-sizing: content-box;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+/* Soft lift on all issue pages (filter paints outside the box; no box-shadow) */
+.issue-page--scroll .zine-strip .zine-strip__page {
+  filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
 }
 
 /* Same intrinsic sizing as open row: width auto, max-width none, height 520 */
@@ -627,10 +656,6 @@ body:has(.shelf-container) {
   align-items: center;
   justify-content: center;
   background: rgba(250, 250, 250, 0.95);
-  box-shadow:
-    2px 3px 0 rgba(0, 0, 0, 0.04),
-    4px 8px 24px rgba(0, 0, 0, 0.1),
-    0 1px 0 rgba(255, 255, 255, 0.6) inset;
 }
 
 .issue-page--scroll .zine-strip--closed .zine-strip__page:nth-child(even) {
@@ -664,7 +689,7 @@ body:has(.shelf-container) {
 /* —— Open: horizontal spread + scroll —— */
 .issue-page--scroll .zine-strip--open {
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   /* Match closed strip so gutter is reserved whether or not the bar is painted */
   scrollbar-gutter: stable;
   scrollbar-width: none;
@@ -679,9 +704,12 @@ body:has(.shelf-container) {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
+  align-items: flex-start;
   position: static;
   width: max-content;
-  height: auto;
+  /* Match closed: one 520px-tall row (Figma cards 520×520) */
+  min-height: 520px;
+  height: 520px;
   margin: 0;
   padding-left: 200px;
   padding-right: 200px;
@@ -704,7 +732,6 @@ body:has(.shelf-container) {
   margin: 0;
   z-index: auto;
   transform: none;
-  box-shadow: none;
   border-radius: 0;
   overflow: visible;
   display: flex;
