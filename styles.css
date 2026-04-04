@@ -104,7 +104,7 @@ body:has(.shelf-container) {
   padding: 20px 60px 0;
   height: 94px;
   box-sizing: border-box;
-  background: #efefef;
+  background: transparent;
   width: auto;
   max-width: none;
 }
@@ -214,6 +214,9 @@ body:has(.shelf-container) {
   flex: 1 1 auto;
   padding: 0;
   position: relative;
+  /* Below fixed .header (z-index 2000); isolate so inner z-index cannot stack above the header. */
+  z-index: 0;
+  isolation: isolate;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -420,6 +423,10 @@ body:has(.shelf-container) {
 
 /* ========== Homepage mobile (Figma node 58:103) ========== */
 @media (max-width: 768px) {
+  header {
+    padding-bottom: 10px;
+  }
+
   .title-stack {
     display: flex;
     flex-direction: column;
@@ -440,22 +447,33 @@ body:has(.shelf-container) {
     min-height: 100%;
     overflow-y: auto;
     overflow-x: visible;
+    /* Same page chrome as desktop body (#EFEFEF). */
+    background: #efefef;
+    /* Hide vertical scrollbar; scrolling still works (touch / wheel / trackpad). */
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html:has(.shelf-container)::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   body:has(.shelf-container) {
     height: auto;
     min-height: 100%;
-    overflow-x: visible;
     overflow-y: visible;
-    background: #fff;
+    background: #efefef;
   }
 
   /*
    * Header sits in normal flow for top offset: main gets padding-top = header outer height so content never scrolls under it.
    */
   .wrapper:has(.shelf-container) {
-    /* Matches .header min-height (72px, border-box — includes 16px top padding). */
-    --mobile-header-height: 72px;
+    /* Matches fixed .header outer height (min-height + padding incl. 10px bottom). */
+    --mobile-header-height: 82px;
     margin-left: auto;
     margin-right: auto;
     padding: 0 24px 32px;
@@ -472,13 +490,14 @@ body:has(.shelf-container) {
     top: 0;
     left: 0;
     width: 100%;
-    z-index: 100;
+    /* Must exceed .content-frame z-index (covers/decor ≤206 + drag); match desktop .header. */
+    z-index: 2000;
     margin: 0;
-    padding: 16px 24px 0;
+    padding: 16px 24px 10px;
     height: auto;
     min-height: 72px;
     box-sizing: border-box;
-    background: #fff;
+    background: transparent;
   }
 
   .wrapper:has(.shelf-container) .header > .title {
@@ -499,6 +518,8 @@ body:has(.shelf-container) {
 
   .wrapper:has(.shelf-container) .shelf-container {
     padding-top: var(--mobile-header-height);
+    z-index: 0;
+    isolation: isolate;
     overflow-x: visible;
     overflow-y: visible;
     touch-action: manipulation;
@@ -569,7 +590,7 @@ body:has(.shelf-container) {
     width: auto !important;
     max-width: 242px;
     height: auto !important;
-    margin: 0;
+    margin: 0 0 0 -60px;
   }
 
   .wrapper:has(.shelf-container) .mobile-first-shelf-group__cluster .decoration-cat[data-layout-id='cat'] {
@@ -581,7 +602,7 @@ body:has(.shelf-container) {
     aspect-ratio: 97 / 100;
     height: auto !important;
     flex: 0 0 auto;
-    margin: 0 0 0 -40px;
+    margin: 0 0 0 -20px;
   }
 
   .wrapper:has(.shelf-container) .mobile-first-shelf-group .layout-shelf[data-layout-id='shelf'] {
@@ -591,7 +612,7 @@ body:has(.shelf-container) {
     width: 100% !important;
     max-width: 350px;
     height: auto !important;
-    margin: -10px 0 0;
+    margin: -10px 0 0 -50px;
     transform: none !important;
     pointer-events: none;
   }
@@ -600,14 +621,25 @@ body:has(.shelf-container) {
     display: block !important;
   }
 
-  .wrapper:has(.shelf-container) .layout-item[data-layout-id='lamp'],
-  .wrapper:has(.shelf-container) .layout-item[data-layout-id='coffee'] {
+  .wrapper:has(.shelf-container) .layout-item[data-layout-id='lamp'] {
+    display: none !important;
+  }
+
+  .wrapper:has(.shelf-container) .layout-item[data-layout-id='chinese-cat'] {
     display: none !important;
   }
 
   .wrapper:has(.shelf-container) .content-frame .layout-draggable {
     cursor: default;
     touch-action: manipulation;
+  }
+
+  /*
+   * Horizontal scrollbar only: do not set overflow-x on html, .wrapper, .shelf-container, or #content-frame.
+   * (Overflowing art may still paint past the viewport edge; this only suppresses the x scrollbar.)
+   */
+  body {
+    overflow-x: hidden;
   }
 }
 
