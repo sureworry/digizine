@@ -203,8 +203,12 @@
       scroller.children[c].style.setProperty('--stack-total', String(total));
     }
 
+    var outer = document.createElement('div');
+    outer.className = 'zine-strip-outer';
+    outer.appendChild(wrap);
+
     return {
-      element: wrap
+      element: outer
     };
   }
 

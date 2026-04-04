@@ -56,8 +56,15 @@
   }
   // #endregion
 
-  function setupZineStripInteraction(stripEl, options) {
+  function setupZineStripInteraction(stripMount, options) {
     var issue = options.issue;
+    var stripEl =
+      stripMount &&
+      stripMount.classList &&
+      stripMount.classList.contains('zine-strip')
+        ? stripMount
+        : stripMount.querySelector('.zine-strip');
+    if (!stripEl) return;
     var scrollerEl = stripEl.querySelector('.zine-strip__scroller');
     if (!scrollerEl) return;
 
