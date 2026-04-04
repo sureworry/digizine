@@ -12,8 +12,8 @@ var HOMEPAGE_LAYOUT_SPEC = {
   shelf: { x: 0, y: 682.64111328125, width: 1120, height: 93.72390747070312 },
   'shelf-2': { x: 1199, y: 682.64111328125, width: 1120, height: 93.72390747070312 },
   about: {
-    x: 1484,
-    y: 135,
+    x: 1539,
+    y: 134,
     width: 340,
     height: 559.236
   },

@@ -1,13 +1,13 @@
 @font-face {
-  font-family: 'Viksjoe Trial';
-  src: url('assets/fonts/ViksjoeTrial-Regular.otf') format('opentype');
+  font-family: 'Makiba';
+  src: url('assets/fonts/makibafont13.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Viksjoe Trial';
-  src: url('assets/fonts/ViksjoeTrial-RegularItalic.otf') format('opentype');
+  font-family: 'Makiba';
+  src: url('assets/fonts/makibafont13.ttf') format('truetype');
   font-weight: normal;
   font-style: italic;
 }
@@ -20,7 +20,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: #EFEFEF;
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
 }
 
 body.issue-page--scroll {
@@ -114,8 +114,8 @@ body:has(.shelf-container) {
   min-width: 0;
   margin: 0;
   padding: 0;
-  font-family: 'Viksjoe Trial', serif;
-  font-size: 28px;
+  font-family: 'Makiba', serif;
+  font-size: 40px;
   line-height: normal;
   font-weight: 400;
   letter-spacing: 1.4px;
@@ -133,10 +133,10 @@ body:has(.shelf-container) {
 }
 
 .title {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
+  font-size: 40px;
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: lowercase;
@@ -178,10 +178,10 @@ body:has(.shelf-container) {
 
 .datetime-date,
 .datetime-time {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-weight: 400;
   font-style: italic;
-  font-size: 28px;
+  font-size: 32px;
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: lowercase;
@@ -397,7 +397,7 @@ body:has(.shelf-container) {
 
 .issue-back,
 .issue-nav {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-size: 28px;
   letter-spacing: 1.4px;
   text-transform: lowercase;
@@ -411,7 +411,7 @@ body:has(.shelf-container) {
 }
 
 .issue-title {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-weight: 400;
   font-size: 28px;
   letter-spacing: 1.4px;
@@ -660,7 +660,7 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip--closed .zine-strip__page.zine-strip__page--text {
   padding: 1rem;
   text-align: center;
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-style: italic;
   font-size: 18px;
   color: #8a8a8a;
@@ -730,7 +730,7 @@ body:has(.shelf-container) {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-style: italic;
   font-size: 18px;
   color: #A5A5A5;
