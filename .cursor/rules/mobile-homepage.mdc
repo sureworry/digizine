@@ -1,0 +1,10 @@
+---
+description: Homepage layout changes are mobile-only unless desktop is explicitly requested
+alwaysApply: true
+---
+
+# Digizine homepage — mobile vs desktop
+
+- **Mobile (narrow / responsive):** Put layout, spacing, and overflow tweaks in `styles.css` inside `@media (max-width: 768px)` and/or in `homepage-mobile-spec.js`. `script.js` may skip `applyLayoutFromSpec` for specific ids when `isMobileHomepageLayout()` is true.
+- **Desktop / wide (web view):** Use `homepage-spec.js` and the base (non-mobile) rules in `styles.css` only. Do **not** change these for mobile-only requests.
+- If the user asks for a layout change without saying “desktop” or “web”, assume **mobile only**.

@@ -142,6 +142,36 @@ function px(n) {
   return typeof n === 'number' && !isNaN(n) ? n + 'px' : '0px';
 }
 
+function isMobileHomepageLayout() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches;
+}
+
+function getHomepageSpec() {
+  if (isMobileHomepageLayout() && typeof MOBILE_HOMEPAGE_LAYOUT_SPEC !== 'undefined') {
+    return MOBILE_HOMEPAGE_LAYOUT_SPEC;
+  }
+  return typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
+}
+
+/**
+ * Desktop homepage: scroll horizontally so the first shelf (left plank + romanticise + cat zone)
+ * is centered in the viewport. Matches .content-frame { left: 160px } and shelf width 1120 in spec.
+ */
+function centerHomepageFirstShelfClusterInView() {
+  if (isMobileHomepageLayout()) return;
+  var shelf = document.querySelector('main.shelf-container');
+  if (!shelf || !document.getElementById('content-frame')) return;
+  var spec = typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
+  var shelfBox = spec && spec.shelf;
+  var frameLeft = 160;
+  var leftShelfCenterX = shelfBox && shelfBox.width != null ? shelfBox.width / 2 : 560;
+  var clusterCenter = frameLeft + leftShelfCenterX;
+  var w = shelf.clientWidth;
+  var maxScroll = Math.max(0, shelf.scrollWidth - w);
+  var target = clusterCenter - w / 2;
+  shelf.scrollLeft = Math.max(0, Math.min(target, maxScroll));
+}
+
 function applyBox(el, x, y, w, h) {
   el.style.removeProperty('inset');
   el.style.left = px(x);
@@ -154,6 +184,7 @@ function applyBox(el, x, y, w, h) {
 }
 
 function isDraggableId(layoutId) {
+  if (isMobileHomepageLayout()) return false;
   return HOMEPAGE_DRAGGABLE_IDS.indexOf(layoutId) !== -1;
 }
 
@@ -162,7 +193,7 @@ function isDraggableId(layoutId) {
  * Zines: spec only. Draggable: spec + dragOffsets.
  */
 function applyLayoutFromSpec() {
-  var spec = typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
+  var spec = getHomepageSpec();
   var frame = document.getElementById('content-frame');
   if (!spec || !frame) return;
 
@@ -178,7 +209,28 @@ function applyLayoutFromSpec() {
     var id = el.getAttribute('data-layout-id');
     if (id === 'content-frame') return;
     var box = spec[id];
-    if (!box) return;
+    if (!box) {
+      el.style.removeProperty('left');
+      el.style.removeProperty('top');
+      el.style.removeProperty('width');
+      el.style.removeProperty('height');
+      el.style.removeProperty('right');
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('transform');
+      return;
+    }
+
+    /* Mobile: first shelf group is laid out as a single flex column in CSS (cover + cat + plank). */
+    if (isMobileHomepageLayout() && (id === 'shelf' || id === 'romanticise' || id === 'cat')) {
+      el.style.removeProperty('left');
+      el.style.removeProperty('top');
+      el.style.removeProperty('width');
+      el.style.removeProperty('height');
+      el.style.removeProperty('right');
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('transform');
+      return;
+    }
 
     var x = box.x;
     var y = box.y;
@@ -202,7 +254,7 @@ function parsePx(styleVal) {
  * Debug: spec x/y, drag offset, final rendered x/y per item.
  */
 function logHomepageLayoutState(reason) {
-  var spec = typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : {};
+  var spec = getHomepageSpec() || {};
   var frame = document.getElementById('content-frame');
   if (!frame) return;
 
@@ -233,6 +285,14 @@ loadPersistedDraggableLayout();
 applyLayoutFromSpec();
 logHomepageLayoutState('initial load');
 
+window.addEventListener('load', function () {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      centerHomepageFirstShelfClusterInView();
+    });
+  });
+});
+
 function scheduleLayoutReflow() {
   applyLayoutFromSpec();
   requestAnimationFrame(function () {
@@ -245,6 +305,8 @@ if (document.readyState === 'complete') {
 } else {
   window.addEventListener('load', scheduleLayoutReflow);
 }
+
+window.addEventListener('resize', scheduleLayoutReflow);
 
 /**
  * Homepage scroll frame: drag to pan horizontally; wheel/trackpad deltaY -> scrollLeft
@@ -268,6 +330,7 @@ if (document.readyState === 'complete') {
   }
 
   function onPointerDown(e) {
+    if (isMobileHomepageLayout()) return;
     if (!isPanTarget(e)) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     panning = true;
@@ -287,13 +350,18 @@ if (document.readyState === 'complete') {
   }
 
   function onPointerMove(e) {
-    if (!panning) return;
+    if (!panning || isMobileHomepageLayout()) return;
     applyHorizontalScrollFromClientX(e.clientX);
     e.preventDefault();
   }
 
   function onPointerUp(e) {
     if (!panning) return;
+    if (isMobileHomepageLayout()) {
+      panning = false;
+      shelf.classList.remove('shelf-container--panning');
+      return;
+    }
     /* Commit final scroll on release (move events can be skipped/coalesced before up). */
     if (e && typeof e.clientX === 'number') {
       applyHorizontalScrollFromClientX(e.clientX);
@@ -320,6 +388,7 @@ if (document.readyState === 'complete') {
   document.addEventListener('mouseup', onPointerUp, true);
 
   function onWheel(e) {
+    if (isMobileHomepageLayout()) return;
     var dy = e.deltaY;
     if (dy === 0) return;
     shelf.scrollLeft += dy;
@@ -417,8 +486,9 @@ window.digizineExportLayout = function () {
     if (!isDraggableId(id)) return;
     e.preventDefault();
     var pt = clientPoint(e);
-    var spec = HOMEPAGE_LAYOUT_SPEC[id];
-    if (!spec) return;
+    var layoutSpec = getHomepageSpec();
+    var box = layoutSpec && layoutSpec[id];
+    if (!box) return;
     var o = dragOffsets[id] || { dx: 0, dy: 0 };
     bringToFront(t, id);
     active = {

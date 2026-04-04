@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>digizine — mobile preview</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: #1e1e1e;
+    }
+    .chrome {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 13px;
+      color: #bbb;
+      padding: 12px 16px;
+      line-height: 1.5;
+    }
+    .chrome a {
+      color: #7cb8ff;
+    }
+    .chrome kbd {
+      font-size: 11px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    .frame-wrap {
+      max-width: 406px;
+      margin: 0 auto 24px;
+      padding: 12px;
+      background: #111;
+      border-radius: 28px;
+      box-sizing: border-box;
+    }
+    iframe {
+      display: block;
+      width: 390px;
+      max-width: 100%;
+      height: min(844px, calc(100vh - 120px));
+      margin: 0 auto;
+      border: 0;
+      border-radius: 20px;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  <p class="chrome">
+    Embedded homepage at <strong>390px</strong> width (matches Figma mobile artboard). Serve the site locally
+    (<code>npm run preview</code>) so assets load. In Cursor: open <a href="http://127.0.0.1:5173/preview-mobile.html">preview-mobile.html</a>
+    in <strong>Simple Browser</strong>, or open <a href="index.html">index.html</a> and use the browser’s device toolbar
+    (<kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> in Chrome).
+  </p>
+  <div class="frame-wrap">
+    <iframe src="index.html" title="Homepage — mobile layout"></iframe>
+  </div>
+</body>
+</html>

@@ -86,9 +86,10 @@ body:has(.shelf-container) {
 .header {
   height: 94px;
   padding: 20px 0 0 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 0;
+  column-gap: 0;
 }
 
 /* Fixed site header — identical geometry on homepage + issue (viewport; L1↔L2). */
@@ -110,7 +111,7 @@ body:has(.shelf-container) {
 
 /* When title is wrapped in a link (issue page) — match <h1 class="title"> on index (UA h1 + inline <a> otherwise jog vs shelf) */
 .header__title-wrap {
-  flex: 1;
+  justify-self: start;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -130,7 +131,7 @@ body:has(.shelf-container) {
 
 /* When title is direct child (index page) */
 .header > .title {
-  flex: 1;
+  justify-self: start;
   min-width: 0;
 }
 
@@ -152,10 +153,11 @@ body:has(.shelf-container) {
 }
 
 .header-flower {
+  grid-column: 2;
+  justify-self: center;
   width: 94px;
   height: 94px;
   object-fit: contain;
-  flex-shrink: 0;
 }
 
 /* Calm, continuous rotation for header flower */
@@ -174,7 +176,9 @@ body:has(.shelf-container) {
 }
 
 .datetime-wrap {
-  flex: 1;
+  grid-column: 3;
+  justify-self: end;
+  min-width: 0;
   text-align: right;
 }
 
@@ -387,6 +391,224 @@ body:has(.shelf-container) {
 
 .content-frame .decoration-cat:hover .decoration-cat__img--smiling {
   opacity: 1;
+}
+
+/* First shelf cluster: wrappers are display:contents on desktop so HOMEPAGE_LAYOUT_SPEC still targets virtual #content-frame children. */
+.mobile-first-shelf-group,
+.mobile-first-shelf-group__cluster,
+.romanticise-cover-wrap {
+  display: contents;
+}
+
+/* Extra shelves used only in mobile layout (Figma 58:103) */
+.layout-shelf--mobile-only {
+  display: none !important;
+}
+
+/* Two-line title on mobile; one line on desktop */
+.title-stack {
+  display: inline;
+}
+
+.title-stack .title-line {
+  display: inline;
+}
+
+.title-stack .title-line:first-child::after {
+  content: ' ';
+}
+
+/* ========== Homepage mobile (Figma node 58:103) ========== */
+@media (max-width: 768px) {
+  .title-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: normal;
+  }
+
+  .title-stack .title-line:first-child::after {
+    content: none;
+  }
+
+  /*
+   * Horizontal overflow must stay visible: artboard uses negative x / wide assets; overflow-x: hidden
+   * clips the sides (this was never intentionally “removed” — the mobile block shipped with hidden).
+   */
+  html:has(.shelf-container) {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    overflow-x: visible;
+  }
+
+  body:has(.shelf-container) {
+    height: auto;
+    min-height: 100%;
+    overflow-x: visible;
+    overflow-y: visible;
+    background: #fff;
+  }
+
+  /*
+   * Header sits in normal flow for top offset: main gets padding-top = header outer height so content never scrolls under it.
+   */
+  .wrapper:has(.shelf-container) {
+    /* Matches .header min-height (72px, border-box — includes 16px top padding). */
+    --mobile-header-height: 72px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 24px 32px;
+    min-height: 0;
+    height: auto;
+    max-width: 100%;
+    overflow-x: visible;
+    overflow-y: visible;
+    box-sizing: border-box;
+  }
+
+  .wrapper:has(.shelf-container) .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    margin: 0;
+    padding: 16px 24px 0;
+    height: auto;
+    min-height: 72px;
+    box-sizing: border-box;
+    background: #fff;
+  }
+
+  .wrapper:has(.shelf-container) .header > .title {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+
+  .wrapper:has(.shelf-container) .header-flower {
+    width: 52px;
+    height: 52px;
+  }
+
+  .wrapper:has(.shelf-container) .datetime-date,
+  .wrapper:has(.shelf-container) .datetime-time {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+
+  .wrapper:has(.shelf-container) .shelf-container {
+    padding-top: var(--mobile-header-height);
+    overflow-x: visible;
+    overflow-y: visible;
+    touch-action: manipulation;
+    cursor: default;
+    flex: 0 0 auto;
+  }
+
+  .wrapper:has(.shelf-container) .shelf-container.shelf-container--panning {
+    cursor: default;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame-scroll-track {
+    width: min(390px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame {
+    position: relative;
+    left: auto;
+    top: auto;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: visible;
+  }
+
+  /*
+   * First shelf row: one flex column so cover (incl. PNG shadow/backing) + cat + plank center as a unit.
+   * MOBILE_HOMEPAGE_LAYOUT_SPEC romanticise y=91 anchors the block; JS skips layout for these ids on mobile.
+   */
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 91px;
+    padding: 0 24px;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group__cluster {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    width: 100%;
+    position: relative;
+    pointer-events: auto;
+  }
+
+  .wrapper:has(.shelf-container) .romanticise-cover-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    position: relative;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .wrapper:has(.shelf-container) .romanticise-cover-wrap .zine-cover[data-layout-id='romanticise'] {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: 242px;
+    height: auto !important;
+    margin: 0;
+  }
+
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group__cluster .decoration-cat[data-layout-id='cat'] {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: 97px;
+    aspect-ratio: 97 / 100;
+    height: auto !important;
+    flex: 0 0 auto;
+    margin: 0 0 0 -40px;
+  }
+
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group .layout-shelf[data-layout-id='shelf'] {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 350px;
+    height: auto !important;
+    margin: -10px 0 0;
+    transform: none !important;
+    pointer-events: none;
+  }
+
+  .wrapper:has(.shelf-container) .layout-shelf.layout-shelf--mobile-only {
+    display: block !important;
+  }
+
+  .wrapper:has(.shelf-container) .layout-item[data-layout-id='lamp'],
+  .wrapper:has(.shelf-container) .layout-item[data-layout-id='coffee'] {
+    display: none !important;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame .layout-draggable {
+    cursor: default;
+    touch-action: manipulation;
+  }
 }
 
 /* Issue page scaffold (placeholder sections only) */

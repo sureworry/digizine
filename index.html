@@ -9,7 +9,12 @@
 <body>
   <div class="wrapper">
   <header class="header">
-    <h1 class="title">shar's zine shelf</h1>
+    <h1 class="title">
+      <span class="title-stack">
+        <span class="title-line">shar's</span>
+        <span class="title-line">zine shelf</span>
+      </span>
+    </h1>
     <img src="assets/decorations/flower.png" alt="" class="header-flower" aria-hidden="true">
     <div class="datetime-wrap">
       <p class="datetime-date" id="datetime-date"></p>
@@ -19,19 +24,69 @@
 
   <main class="shelf-container">
     <div class="content-frame" id="content-frame" aria-label="Homepage scene">
+      <div class="mobile-first-shelf-group">
+        <div class="mobile-first-shelf-group__cluster">
+          <div class="romanticise-cover-wrap">
+            <img
+              src="assets/cover/romanticise the mundane.png"
+              alt="romanticise the mundane"
+              class="layout-item zine-cover layout-draggable"
+              data-layout-id="romanticise"
+              data-zine="romanticise the mundane"
+              data-draggable="true"
+              draggable="false"
+            >
+          </div>
+          <div
+            class="layout-item layout-draggable decoration decoration-cat"
+            data-layout-id="cat"
+            data-draggable="true"
+            draggable="false"
+            role="img"
+            aria-label="Cat decoration"
+          >
+            <img src="assets/decorations/pokerface.png" alt="" class="decoration-cat__img decoration-cat__img--default" aria-hidden="true">
+            <img src="assets/decorations/smiling.png" alt="" class="decoration-cat__img decoration-cat__img--smiling" aria-hidden="true">
+          </div>
+        </div>
+        <img
+          src="assets/decorations/shelf.png"
+          alt=""
+          class="layout-item layout-shelf"
+          data-layout-id="shelf"
+          draggable="false"
+          aria-hidden="true"
+        >
+      </div>
       <img
         src="assets/decorations/shelf.png"
         alt=""
         class="layout-item layout-shelf"
-        data-layout-id="shelf"
+        data-layout-id="shelf-2"
         draggable="false"
         aria-hidden="true"
       >
       <img
         src="assets/decorations/shelf.png"
         alt=""
-        class="layout-item layout-shelf"
-        data-layout-id="shelf-2"
+        class="layout-item layout-shelf layout-shelf--mobile-only"
+        data-layout-id="shelf-3"
+        draggable="false"
+        aria-hidden="true"
+      >
+      <img
+        src="assets/decorations/shelf.png"
+        alt=""
+        class="layout-item layout-shelf layout-shelf--mobile-only"
+        data-layout-id="shelf-4"
+        draggable="false"
+        aria-hidden="true"
+      >
+      <img
+        src="assets/decorations/shelf.png"
+        alt=""
+        class="layout-item layout-shelf layout-shelf--mobile-only"
+        data-layout-id="shelf-5"
         draggable="false"
         aria-hidden="true"
       >
@@ -70,16 +125,6 @@
         data-draggable="true"
         draggable="false"
       >
-      <img
-        src="assets/cover/romanticise the mundane.png"
-        alt="romanticise the mundane"
-        class="layout-item zine-cover layout-draggable"
-        data-layout-id="romanticise"
-        data-zine="romanticise the mundane"
-        data-draggable="true"
-        draggable="false"
-      >
-
       <img
         src="assets/cover/about.png"
         alt="About the creator"
@@ -151,17 +196,6 @@
         draggable="false"
         aria-hidden="true"
       >
-      <div
-        class="layout-item layout-draggable decoration decoration-cat"
-        data-layout-id="cat"
-        data-draggable="true"
-        draggable="false"
-        role="img"
-        aria-label="Cat decoration"
-      >
-        <img src="assets/decorations/pokerface.png" alt="" class="decoration-cat__img decoration-cat__img--default" aria-hidden="true">
-        <img src="assets/decorations/smiling.png" alt="" class="decoration-cat__img decoration-cat__img--smiling" aria-hidden="true">
-      </div>
     </div>
     <!-- In-flow width so .shelf-container overflow-x includes the full artboard (abs.pos. children alone do not always extend scroll width). -->
     <div class="content-frame-scroll-track" aria-hidden="true"></div>
@@ -169,6 +203,7 @@
   </div>
 
   <script src="homepage-spec.js"></script>
+  <script src="homepage-mobile-spec.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
