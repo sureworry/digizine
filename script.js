@@ -18,6 +18,7 @@ var dragOffsets = {
   'snake-plant': { dx: 0, dy: 0 },
   'chinese-cat': { dx: 0, dy: 0 },
   books: { dx: 0, dy: 0 },
+  coffee: { dx: 0, dy: 0 },
   cat: { dx: 0, dy: 0 },
   lamp: { dx: 0, dy: 0 },
   'idea-marinade': { dx: 0, dy: 0 },
