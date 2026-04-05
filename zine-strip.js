@@ -3,7 +3,7 @@
   var DEFAULT_STACK_GAP = -400;
   var MIN_STACK_ADVANCE = 14;
 
-  /** Match styles.css L2 breakpoint: symmetric closed-stack inset only above 768px (main geometry on mobile). */
+  /** Match styles.css L2 breakpoint (max-width: 768px). */
   function isIssueReaderMobileViewport() {
     return (
       typeof window.matchMedia !== 'undefined' &&
@@ -88,12 +88,12 @@
     }
 
     /*
-     * Desktop: symmetric 20px lead + trail (same total width as old +40 right-only).
-     * Mobile: retain main — x from 0, totalW = … + 40 on the right only.
+     * Lead + trail inset the stack inside the scroller width (justify-content:center on the strip).
+     * Desktop: symmetric 20/20. Mobile: 28/12 (+8px optical shift right vs 20/20; same sum → same total width).
      */
     var mobile = isIssueReaderMobileViewport();
-    var leadInset = mobile ? 0 : 20;
-    var trailPad = mobile ? 40 : 20;
+    var leadInset = mobile ? 28 : 20;
+    var trailPad = mobile ? 12 : 20;
     var x = leadInset;
     for (var k = 0; k < pages.length; k++) {
       pages[k].style.setProperty('--stack-left', x + 'px');

@@ -183,8 +183,21 @@ function applyBox(el, x, y, w, h) {
   el.style.transform = 'none';
 }
 
+/** Mobile: not draggable — keep click-to-open only (desktop spec never listed these in HOMEPAGE_DRAGGABLE_IDS). */
+var MOBILE_NON_DRAGGABLE_ZINE_IDS = {
+  'self-perception': true,
+  observations: true,
+  collection: true,
+  confessions: true
+};
+
 function isDraggableId(layoutId) {
-  if (isMobileHomepageLayout()) return false;
+  if (isMobileHomepageLayout()) {
+    var m = typeof MOBILE_HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? MOBILE_HOMEPAGE_LAYOUT_SPEC : null;
+    if (!m || !layoutId || layoutId === 'content-frame') return false;
+    if (MOBILE_NON_DRAGGABLE_ZINE_IDS[layoutId]) return false;
+    return Object.prototype.hasOwnProperty.call(m, layoutId);
+  }
   return HOMEPAGE_DRAGGABLE_IDS.indexOf(layoutId) !== -1;
 }
 
@@ -205,6 +218,19 @@ function applyLayoutFromSpec() {
     frame.style.maxWidth = 'none';
   }
 
+  /* Web desktop: pin lamp Y using viewport/shelf bottom vs #content-frame top (not artboard height — avoids gap on tall windows). */
+  var lampShelfBottomMinusFrameTop = null;
+  if (!isMobileHomepageLayout()) {
+    var shelfForLamp = document.querySelector('main.shelf-container');
+    if (shelfForLamp) {
+      var sR = shelfForLamp.getBoundingClientRect();
+      var fR = frame.getBoundingClientRect();
+      if (fR.height > 0) {
+        lampShelfBottomMinusFrameTop = sR.bottom - fR.top;
+      }
+    }
+  }
+
   frame.querySelectorAll('[data-layout-id]').forEach(function (el) {
     var id = el.getAttribute('data-layout-id');
     if (id === 'content-frame') return;
@@ -220,7 +246,9 @@ function applyLayoutFromSpec() {
       return;
     }
 
-    /* Mobile: first shelf group is laid out as a single flex column in CSS (cover + cat + plank). */
+    /*
+     * Mobile first shelf: flex + margins in CSS (unchanged look). Drag = translate(dx,dy) on top — no spec x/y.
+     */
     if (isMobileHomepageLayout() && (id === 'shelf' || id === 'romanticise' || id === 'cat')) {
       el.style.removeProperty('left');
       el.style.removeProperty('top');
@@ -228,12 +256,31 @@ function applyLayoutFromSpec() {
       el.style.removeProperty('height');
       el.style.removeProperty('right');
       el.style.removeProperty('bottom');
-      el.style.removeProperty('transform');
+      var oFirst = dragOffsets[id] || { dx: 0, dy: 0 };
+      if (oFirst.dx || oFirst.dy) {
+        el.style.setProperty(
+          'transform',
+          'translate(' + oFirst.dx + 'px, ' + oFirst.dy + 'px)'
+        );
+      } else {
+        el.style.removeProperty('transform');
+      }
       return;
     }
 
     var x = box.x;
     var y = box.y;
+    /* Web desktop: lamp base sits on the bottom of the main shelf/viewport area (tall windows no longer show a gap under the pole). */
+    if (id === 'lamp' && !isMobileHomepageLayout() && box.height != null) {
+      if (lampShelfBottomMinusFrameTop != null) {
+        y = lampShelfBottomMinusFrameTop - box.height;
+      } else {
+        var cfLamp = spec['content-frame'];
+        if (cfLamp && cfLamp.height != null) {
+          y = cfLamp.height - box.height;
+        }
+      }
+    }
     if (isDraggableId(id)) {
       var o = dragOffsets[id] || { dx: 0, dy: 0 };
       x += o.dx;
@@ -325,7 +372,11 @@ window.addEventListener('resize', scheduleLayoutReflow);
     var t = e.target;
     if (!t || !shelf.contains(t)) return false;
     if (t.closest('.zine-cover[data-zine]')) return false;
-    if (t.closest('[data-draggable="true"]')) return false;
+    var dragEl = t.closest('[data-draggable="true"]');
+    if (dragEl) {
+      var pid = dragEl.getAttribute('data-layout-id');
+      if (pid && typeof isDraggableId === 'function' && isDraggableId(pid)) return false;
+    }
     return true;
   }
 
@@ -556,7 +607,12 @@ if (contentFrame) {
       e.preventDefault();
       var slug = el.getAttribute('data-slug');
       if (slug) {
-        window.location = 'issue.html?slug=' + encodeURIComponent(slug);
+        if (typeof setPendingIssueSlug === 'function') {
+          setPendingIssueSlug(slug);
+        }
+        var u = new URL('issue.html', window.location.href);
+        u.searchParams.set('slug', slug);
+        window.location.assign(u.href);
       }
     });
   });

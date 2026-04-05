@@ -30,5 +30,5 @@ var MOBILE_HOMEPAGE_LAYOUT_SPEC = {
   books: { x: 228, y: 1146, width: 81, height: 95 },
   plant: { x: 201, y: 1717, width: 147, height: 183 },
   /* Mobile: coffee replaces chinese-cat (hidden via CSS). Height from desktop 152×112 aspect at 100px wide. */
-  coffee: { x: 257, y: 2261, width: 100, height: 74 }
+  coffee: { x: 249, y: 2261, width: 100, height: 74 }
 };

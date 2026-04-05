@@ -234,6 +234,14 @@ body:has(.shelf-container) {
   overscroll-behavior-y: none;
   touch-action: pan-x;
   cursor: grab;
+  /* Web: hide horizontal scrollbar; drag / trackpad / wheel pan unchanged */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.wrapper:has(.shelf-container) .shelf-container::-webkit-scrollbar {
+  display: none;
+  height: 0;
 }
 
 .wrapper:has(.shelf-container) .shelf-container.shelf-container--panning {
@@ -596,7 +604,7 @@ body:has(.shelf-container) {
 
   /*
    * First shelf row: one flex column so cover (incl. PNG shadow/backing) + cat + plank center as a unit.
-   * MOBILE_HOMEPAGE_LAYOUT_SPEC romanticise y=51 anchors the block; JS skips layout for these ids on mobile.
+   * JS does not set left/top from spec here; drag on mobile uses transform: translate() from dragOffsets only.
    */
   .wrapper:has(.shelf-container) .mobile-first-shelf-group {
     display: flex;
@@ -661,8 +669,8 @@ body:has(.shelf-container) {
     max-width: 350px;
     height: auto !important;
     margin: -10px 0 0 -50px;
-    transform: none !important;
-    pointer-events: none;
+    /* Drag nudge via inline transform from script — do not use transform:none !important */
+    pointer-events: auto;
   }
 
   .wrapper:has(.shelf-container) .layout-shelf.layout-shelf--mobile-only {
@@ -677,14 +685,15 @@ body:has(.shelf-container) {
     display: none !important;
   }
 
-  .wrapper:has(.shelf-container) .content-frame .layout-draggable {
+  .wrapper:has(.shelf-container) .content-frame .layout-draggable,
+  .wrapper:has(.shelf-container) .content-frame [data-draggable='true'] {
     cursor: default;
     touch-action: manipulation;
   }
 
   /*
    * L2 issue reader — Figma node 66:89 (mobile-view-L2): 390×844, cards 218×218, strip top y=293,
-   * “back to shelf” y=704. Stack gap −167.692px = desktop −400 scaled by 218/520 (same inline fan as web).
+   * “back to shelf” fixed to bottom + safe area (y=704 was 844px-tall Figma only). Stack gap −167.692px…
    * Open strip horizontal inset matches web model: symmetric --zine-open-padding-x (scaled for mobile).
    */
   .issue-page--scroll {
@@ -693,12 +702,12 @@ body:has(.shelf-container) {
     --zine-open-padding-x: 84px;
   }
 
-  /* L2: strip scrolls horizontally only; main fills viewport below header and centers the frame */
+  /* L2: pan-y on main so vertical page scroll works; open strip uses pan-x (CSS + JS swipe → scrollLeft). */
   .issue-page--scroll .issue-scroll-main {
     padding-top: var(--mobile-header-height);
     z-index: 0;
     isolation: isolate;
-    touch-action: manipulation;
+    touch-action: pan-y;
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
@@ -726,24 +735,20 @@ body:has(.shelf-container) {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
   }
 
-  .issue-page--scroll .zine-strip::-webkit-scrollbar {
-    display: none;
-  }
-
-  .issue-page--scroll .zine-strip {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  /* Figma mobile-view-L2: “back to shelf” y=704px, black link — desktop keeps main greys + in-flow link */
+  /*
+   * “back to shelf”: fixed y=704 matched 844px Figma only — on shorter phones (e.g. SE) it sat below the
+   * viewport. Pin to bottom + safe area so it stays visible when deployed.
+   */
   .issue-page--scroll .issue-back {
     position: fixed;
     left: 0;
     right: 0;
-    top: 704px;
-    bottom: auto;
+    top: auto;
+    bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
     z-index: 2100;
     width: 100%;
     text-align: center;
@@ -974,6 +979,13 @@ body:has(.shelf-container) {
   padding-bottom: 40px;
   box-sizing: border-box;
   overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.issue-page--scroll .zine-strip::-webkit-scrollbar {
+  display: none;
+  height: 0;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--closed {

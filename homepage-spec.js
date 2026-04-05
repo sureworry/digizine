@@ -5,6 +5,7 @@
  * Inner nodes: self 0:11, observations Frame 2 0:72, collection Group 17 0:82, idea 0:8,
  * romanticise 0:21, books 0:47, shelf 0:60, about 0:5, shelf-2 0:89, confessions 0:95, cat 0:103, plant 0:121.
  * Not on 0:4 (unchanged in Figma): lamp + coffee positions hand-tuned. Draggable: lamp + snake-plant / chinese-cat / books / coffee.
+ * Web: lamp `y` is ignored — script pins the lamp bottom to the shelf/viewport bottom (see applyLayoutFromSpec).
  * Draggable ids in HOMEPAGE_DRAGGABLE_IDS; z-index on drag brings item to front.
  */
 var HOMEPAGE_LAYOUT_SPEC = {
@@ -68,7 +69,7 @@ var HOMEPAGE_LAYOUT_SPEC = {
   },
   lamp: {
     x: 1917,
-    y: 301,
+    y: 189,
     width: 400,
     height: 600
   },
