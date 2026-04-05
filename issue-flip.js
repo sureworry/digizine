@@ -1,9 +1,19 @@
 // Backup issue reader: PageFlipZineReader (page-flip / spread interaction).
 // Used only by issue-flip.html. To reactivate as main reader, point issue.html at this flow.
 (function () {
-  var params = new URLSearchParams(window.location.search);
-  var slug = params.get('slug') || '';
+  var DEFAULT_ISSUE_SLUG = 'confessions-of-an-anxious-creator';
+  var slug =
+    typeof takeIssueSlugForIssuePage === 'function'
+      ? takeIssueSlugForIssuePage()
+      : new URLSearchParams(location.search).get('slug') || '';
+  if (!slug) {
+    slug = DEFAULT_ISSUE_SLUG;
+  }
   var issue = typeof getIssueBySlug !== 'undefined' ? getIssueBySlug(slug) : null;
+  if (!issue && typeof getIssueBySlug !== 'undefined') {
+    slug = DEFAULT_ISSUE_SLUG;
+    issue = getIssueBySlug(slug);
+  }
 
   var arrowPrev = document.getElementById('issue-arrow-prev');
   var arrowNext = document.getElementById('issue-arrow-next');
@@ -15,7 +25,7 @@
 
   if (issue) {
     var title = issue.title || slug;
-    document.title = title + ' — sharvari\'s digi-zines';
+    document.title = title + ' — shar\'s zine shelf';
     document.body.setAttribute('data-issue-slug', slug);
 
     var container = document.getElementById('zine-viewer');
@@ -30,6 +40,6 @@
       if (arrowNext) arrowNext.addEventListener('click', function () { viewer.nextSpread(); });
     }
   } else {
-    document.title = (slug || 'issue') + ' — sharvari\'s digi-zines';
+    document.title = (slug || 'issue') + ' — shar\'s zine shelf';
   }
 })();

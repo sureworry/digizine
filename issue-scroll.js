@@ -1,12 +1,22 @@
 // Scroll demo page — same reader as issue.js.
 (function () {
-  var params = new URLSearchParams(window.location.search);
-  var slug = params.get('slug') || '';
+  var DEFAULT_ISSUE_SLUG = 'confessions-of-an-anxious-creator';
+  var slug =
+    typeof takeIssueSlugForIssuePage === 'function'
+      ? takeIssueSlugForIssuePage()
+      : new URLSearchParams(location.search).get('slug') || '';
+  if (!slug) {
+    slug = DEFAULT_ISSUE_SLUG;
+  }
   var issue = typeof getIssueBySlug !== 'undefined' ? getIssueBySlug(slug) : null;
+  if (!issue && typeof getIssueBySlug !== 'undefined') {
+    slug = DEFAULT_ISSUE_SLUG;
+    issue = getIssueBySlug(slug);
+  }
 
   if (issue) {
     var title = issue.title || slug;
-    document.title = title + ' — sharvari\'s digi-zines';
+    document.title = title + ' — shar\'s zine shelf';
     document.body.setAttribute('data-issue-slug', slug);
 
     var container = document.getElementById('zine-strip-root');
@@ -22,6 +32,6 @@
       setupZineStripInteraction(strip.element, { issue: issue });
     }
   } else {
-    document.title = (slug || 'issue') + ' — sharvari\'s digi-zines';
+    document.title = (slug || 'issue') + ' — shar\'s zine shelf';
   }
 })();

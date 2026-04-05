@@ -1,15 +1,24 @@
+/* Load first URL that exists: place Makiba as makibafont13.ttf, Makiba.ttf, or makiba.ttf under assets/fonts/. */
 @font-face {
-  font-family: 'Viksjoe Trial';
-  src: url('assets/fonts/ViksjoeTrial-Regular.otf') format('opentype');
+  font-family: 'Makiba';
+  src:
+    url('assets/fonts/makibafont13.ttf') format('truetype'),
+    url('assets/fonts/Makiba.ttf') format('truetype'),
+    url('assets/fonts/makiba.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
-  font-family: 'Viksjoe Trial';
-  src: url('assets/fonts/ViksjoeTrial-RegularItalic.otf') format('opentype');
+  font-family: 'Makiba';
+  src:
+    url('assets/fonts/makibafont13.ttf') format('truetype'),
+    url('assets/fonts/Makiba.ttf') format('truetype'),
+    url('assets/fonts/makiba.ttf') format('truetype');
   font-weight: normal;
   font-style: italic;
+  font-display: swap;
 }
 
 * {
@@ -20,7 +29,11 @@ body {
   margin: 0;
   min-height: 100vh;
   background: #EFEFEF;
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
+}
+
+body.issue-page--scroll {
+  overflow-x: visible;
 }
 
 /*
@@ -30,6 +43,12 @@ body {
 html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
+  font-family: 'Makiba', ui-serif, serif;
+}
+
+/* Issue reader: horizontal strip / shadows extend past layout — avoid root clipping on the right */
+html:has(.issue-page--scroll) {
+  overflow-x: visible;
 }
 
 /* Homepage: no vertical page scroll — horizontal pan only on .shelf-container. */
@@ -77,9 +96,11 @@ body:has(.shelf-container) {
 .header {
   height: 94px;
   padding: 20px 0 0 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 0;
+  column-gap: 0;
+  font-family: 'Makiba', ui-serif, serif;
 }
 
 /* Fixed site header — identical geometry on homepage + issue (viewport; L1↔L2). */
@@ -94,19 +115,19 @@ body:has(.shelf-container) {
   padding: 20px 60px 0;
   height: 94px;
   box-sizing: border-box;
-  background: #efefef;
+  background: transparent;
   width: auto;
   max-width: none;
 }
 
 /* When title is wrapped in a link (issue page) — match <h1 class="title"> on index (UA h1 + inline <a> otherwise jog vs shelf) */
 .header__title-wrap {
-  flex: 1;
+  justify-self: start;
   min-width: 0;
   margin: 0;
   padding: 0;
-  font-family: 'Viksjoe Trial', serif;
-  font-size: 28px;
+  font-family: 'Makiba', serif;
+  font-size: 40px;
   line-height: normal;
   font-weight: 400;
   letter-spacing: 1.4px;
@@ -114,20 +135,22 @@ body:has(.shelf-container) {
 }
 
 .header__title-wrap > .title {
-  display: block;
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
 }
 
 /* When title is direct child (index page) */
 .header > .title {
-  flex: 1;
+  justify-self: start;
   min-width: 0;
 }
 
 .title {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
+  font-size: 40px;
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: lowercase;
@@ -140,11 +163,22 @@ body:has(.shelf-container) {
   color: #000;
 }
 
+/* L2: same <h1 class="title"> as homepage; link wraps title-stack */
+.header > .title > a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.header > .title > a:hover {
+  color: #000;
+}
+
 .header-flower {
+  grid-column: 2;
+  justify-self: center;
   width: 94px;
   height: 94px;
   object-fit: contain;
-  flex-shrink: 0;
 }
 
 /* Calm, continuous rotation for header flower */
@@ -163,21 +197,25 @@ body:has(.shelf-container) {
 }
 
 .datetime-wrap {
-  flex: 1;
+  grid-column: 3;
+  justify-self: end;
+  min-width: 0;
   text-align: right;
 }
 
 .datetime-date,
 .datetime-time {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-weight: 400;
   font-style: italic;
-  font-size: 28px;
+  font-size: 32px;
   line-height: normal;
   letter-spacing: 1.4px;
   text-transform: lowercase;
-  margin: 0;
+  margin: 0 0 0 auto;
   color: #A5A5A5;
+  width: fit-content;
+  max-width: 100%;
 }
 
 /*
@@ -197,6 +235,9 @@ body:has(.shelf-container) {
   flex: 1 1 auto;
   padding: 0;
   position: relative;
+  /* Below fixed .header (z-index 2000); isolate so inner z-index cannot stack above the header. */
+  z-index: 0;
+  isolation: isolate;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -204,6 +245,14 @@ body:has(.shelf-container) {
   overscroll-behavior-y: none;
   touch-action: pan-x;
   cursor: grab;
+  /* Web: hide horizontal scrollbar; drag / trackpad / wheel pan unchanged */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.wrapper:has(.shelf-container) .shelf-container::-webkit-scrollbar {
+  display: none;
+  height: 0;
 }
 
 .wrapper:has(.shelf-container) .shelf-container.shelf-container--panning {
@@ -241,6 +290,31 @@ body:has(.shelf-container) {
   top: 90px;
   margin-left: 0;
   margin-right: 0;
+}
+
+/*
+ * Homepage web (desktop): scale the 2319×789 artboard to fit available viewport height — same svh-based
+ * idea as L2 --zine-page-height. Mobile layout (≤768px) uses its own spec + rules; no scale there.
+ */
+@media (min-width: 769px) {
+  .wrapper:has(.shelf-container) {
+    /* Header band + shelf top offset (90px) + margin; tune if clip/peek at extremes */
+    --homepage-chrome-y: 230px;
+    /* Divide by 789px so the result is unitless — required for transform: scale() */
+    --homepage-scale: min(
+      1,
+      max(0.42, calc((100svh - var(--homepage-chrome-y)) / 789px))
+    );
+  }
+
+  .wrapper:has(.shelf-container) .content-frame {
+    transform: scale(var(--homepage-scale));
+    transform-origin: top left;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame-scroll-track {
+    width: calc(160px + 2319px * var(--homepage-scale));
+  }
 }
 
 .content-frame .layout-item {
@@ -324,7 +398,7 @@ body:has(.shelf-container) {
 }
 
 /*
- * Foreground props (books → … → lamp): base z-index 200+ (above shelves at 50).
+ * Foreground props (books → … → lamp → coffee): base z-index 200+ (above shelves at 50).
  * Dragging a prop raises it via script (500+). Issues stay below shelf (CSS & drag max 49).
  */
 .content-frame .decoration-books {
@@ -352,6 +426,18 @@ body:has(.shelf-container) {
   z-index: 205;
 }
 
+/* Web desktop: lamp sits 100px above artboard bottom (sync LAMP_WEB_BOTTOM_OFFSET_PX in script.js); x/width/height + drag from JS */
+@media (min-width: 769px) {
+  .wrapper:has(.shelf-container) .content-frame .layout-item[data-layout-id='lamp'] {
+    top: auto;
+    bottom: 100px;
+  }
+}
+
+.content-frame .decoration-coffee {
+  z-index: 206;
+}
+
 .content-frame .decoration-cat .decoration-cat__img {
   display: block;
   width: 100%;
@@ -372,6 +458,379 @@ body:has(.shelf-container) {
   opacity: 1;
 }
 
+/* First shelf cluster: wrappers are display:contents on desktop so HOMEPAGE_LAYOUT_SPEC still targets virtual #content-frame children. */
+.mobile-first-shelf-group,
+.mobile-first-shelf-group__cluster,
+.romanticise-cover-wrap {
+  display: contents;
+}
+
+/* Extra shelves used only in mobile layout (Figma 58:103) */
+.layout-shelf--mobile-only {
+  display: none !important;
+}
+
+/* Two-line title on mobile; one line on desktop */
+.title-stack {
+  display: inline;
+}
+
+.title-stack .title-line {
+  display: inline;
+}
+
+.title-stack .title-line:first-child::after {
+  content: ' ';
+}
+
+/*
+ * L2 issue reader defaults (desktop). Mobile overrides in @media (max-width: 768px) below — must follow base.
+ * --zine-page-height scales with viewport height (svh) so short/tall windows keep a balanced composition.
+ */
+.issue-page--scroll {
+  --zine-stack-gap: -400px;
+  /* ~header padding + frame margin + main gap + back link + wrapper padding + strip shadow */
+  --issue-l2-chrome-y: 460px;
+  --zine-page-height: min(
+    520px,
+    max(220px, calc(100svh - var(--issue-l2-chrome-y)))
+  );
+  --zine-open-padding-x: 200px;
+}
+
+/* ========== Homepage mobile (Figma node 58:103) ========== */
+@media (max-width: 768px) {
+  header {
+    padding-bottom: 10px;
+  }
+
+  .title-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: normal;
+  }
+
+  .title-stack .title-line:first-child::after {
+    content: none;
+  }
+
+  /*
+   * Horizontal overflow must stay visible: artboard uses negative x / wide assets.
+   * L2: do not use overflow:hidden on .issue-wrapper — it clips both axes and cuts the strip, shadows, and
+   * any bleed past the padded box (desktop L2 uses visible on wrapper). Page scroll stays on html.
+   */
+  html:has(.shelf-container),
+  html:has(.issue-page--scroll) {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    overflow-x: visible;
+    /* Same page chrome as desktop body (#EFEFEF). */
+    background: #efefef;
+    /* Hide vertical scrollbar; scrolling still works (touch / wheel / trackpad). */
+    scrollbar-gutter: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html:has(.shelf-container)::-webkit-scrollbar,
+  html:has(.issue-page--scroll)::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  body:has(.shelf-container),
+  body:has(.issue-page--scroll) {
+    height: auto;
+    min-height: 100%;
+    overflow-y: visible;
+    background: #efefef;
+  }
+
+  /*
+   * Header sits in normal flow for top offset: main gets padding-top = header outer height so content never scrolls under it.
+   * Homepage wrapper only here — L2 .issue-wrapper is split below (no document scroll; min-height 844px).
+   */
+  .wrapper:has(.shelf-container) {
+    /* Matches fixed .header outer height (min-height + padding incl. 10px bottom). */
+    --mobile-header-height: 82px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 24px 32px;
+    min-height: 0;
+    height: auto;
+    max-width: 100%;
+    overflow-x: visible;
+    overflow-y: visible;
+    box-sizing: border-box;
+  }
+
+  .issue-page--scroll .issue-wrapper {
+    --mobile-header-height: 82px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 24px 32px;
+    min-height: 844px;
+    height: 100%;
+    max-height: 100%;
+    max-width: 100%;
+    overflow-x: visible;
+    overflow-y: visible;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .wrapper:has(.shelf-container) .header,
+  .issue-page--scroll .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    /* Must exceed .content-frame z-index (covers/decor ≤206 + drag); match desktop .header. */
+    z-index: 2000;
+    margin: 0;
+    padding: 16px 24px 10px;
+    height: auto;
+    min-height: 72px;
+    box-sizing: border-box;
+    background: transparent;
+  }
+
+  .wrapper:has(.shelf-container) .header > .title,
+  .issue-page--scroll .header > .title {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+
+  .wrapper:has(.shelf-container) .header-flower,
+  .issue-page--scroll .header-flower {
+    width: 52px;
+    height: 52px;
+  }
+
+  .wrapper:has(.shelf-container) .datetime-date,
+  .wrapper:has(.shelf-container) .datetime-time,
+  .issue-page--scroll .datetime-date,
+  .issue-page--scroll .datetime-time {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+
+  .wrapper:has(.shelf-container) .shelf-container {
+    padding-top: var(--mobile-header-height);
+    z-index: 0;
+    isolation: isolate;
+    overflow-x: visible;
+    overflow-y: visible;
+    touch-action: manipulation;
+  }
+
+  .wrapper:has(.shelf-container) .shelf-container {
+    cursor: default;
+    flex: 0 0 auto;
+  }
+
+  .wrapper:has(.shelf-container) .shelf-container.shelf-container--panning {
+    cursor: default;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame-scroll-track {
+    width: min(390px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame {
+    position: relative;
+    left: auto;
+    top: auto;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: visible;
+  }
+
+  /*
+   * First shelf row: one flex column so cover (incl. PNG shadow/backing) + cat + plank center as a unit.
+   * JS does not set left/top from spec here; drag on mobile uses transform: translate() from dragOffsets only.
+   */
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 51px;
+    padding: 0 24px;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group__cluster {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    width: 100%;
+    position: relative;
+    pointer-events: auto;
+  }
+
+  .wrapper:has(.shelf-container) .romanticise-cover-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    position: relative;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .wrapper:has(.shelf-container) .romanticise-cover-wrap .zine-cover[data-layout-id='romanticise'] {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: 242px;
+    height: auto !important;
+    margin: 0 0 0 -60px;
+  }
+
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group__cluster .decoration-cat[data-layout-id='cat'] {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: 97px;
+    aspect-ratio: 97 / 100;
+    height: auto !important;
+    flex: 0 0 auto;
+    /* Desktop cat y is in homepage-spec; mobile uses flex — negative top margin nudges up (sync with spec tweaks). */
+    margin: -5px 0 0 -20px;
+  }
+
+  .wrapper:has(.shelf-container) .mobile-first-shelf-group .layout-shelf[data-layout-id='shelf'] {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 350px;
+    height: auto !important;
+    margin: -10px 0 0 -50px;
+    /* Drag nudge via inline transform from script — do not use transform:none !important */
+    pointer-events: auto;
+  }
+
+  .wrapper:has(.shelf-container) .layout-shelf.layout-shelf--mobile-only {
+    display: block !important;
+  }
+
+  .wrapper:has(.shelf-container) .layout-item[data-layout-id='lamp'] {
+    display: none !important;
+  }
+
+  .wrapper:has(.shelf-container) .layout-item[data-layout-id='chinese-cat'] {
+    display: none !important;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame .layout-draggable,
+  .wrapper:has(.shelf-container) .content-frame [data-draggable='true'] {
+    cursor: default;
+    touch-action: manipulation;
+  }
+
+  /*
+   * L2 issue reader — Figma node 66:89 (mobile-view-L2): cards up to 218×218; height tracks svh on short screens.
+   * “back to shelf” fixed to bottom + safe area. Stack gap −167.692px…
+   */
+  .issue-page--scroll {
+    --zine-stack-gap: -167.692px;
+    --issue-l2-chrome-y-mobile: 300px;
+    --zine-page-height: min(
+      218px,
+      max(160px, calc(100svh - var(--issue-l2-chrome-y-mobile)))
+    );
+    --zine-open-padding-x: 84px;
+  }
+
+  /* L2: pan-y on main so vertical page scroll works; open strip uses pan-x (CSS + JS swipe → scrollLeft). */
+  .issue-page--scroll .issue-scroll-main {
+    padding-top: var(--mobile-header-height);
+    z-index: 0;
+    isolation: isolate;
+    touch-action: pan-y;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .issue-page--scroll .issue-zine-frame--scroll.zine-inner {
+    flex: 0 1 auto;
+    margin-top: 0;
+    min-height: 0;
+    gap: 0;
+    transform: translateY(170px);
+  }
+
+  /*
+   * Same strip layout as web: full-width .zine-strip--closed + justify-content:center centers the scroller.
+   * Touch: horizontal pan needs a scrollable overflow (desktop uses hidden + wheel/JS).
+   */
+  .issue-page--scroll .zine-inner .zine-strip.zine-strip--open {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+  }
+
+  /*
+   * “back to shelf”: fixed y=704 matched 844px Figma only — on shorter phones (e.g. SE) it sat below the
+   * viewport. Pin to bottom + safe area so it stays visible when deployed.
+   */
+  .issue-page--scroll .issue-back {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px));
+    z-index: 2100;
+    width: 100%;
+    text-align: center;
+    font-size: 20px;
+    letter-spacing: 1px;
+    pointer-events: auto;
+    color: #000;
+  }
+
+  .issue-page--scroll .issue-back:hover {
+    color: #000;
+  }
+
+  .issue-page--scroll .zine-strip__page.zine-strip__page--text {
+    min-width: 0;
+    max-width: min(320px, calc(100vw - 48px));
+    padding: 0.75rem;
+    font-size: 14px;
+  }
+
+  /*
+   * Homepage only: suppress horizontal page scrollbar (do not use bare `body` — L2 needs overflow-x visible).
+   */
+  body:has(.shelf-container) {
+    overflow-x: hidden;
+  }
+}
+
 /* Issue page scaffold (placeholder sections only) */
 .issue-page .issue-wrapper {
   min-height: 100vh;
@@ -388,7 +847,7 @@ body:has(.shelf-container) {
 
 .issue-back,
 .issue-nav {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-size: 28px;
   letter-spacing: 1.4px;
   text-transform: lowercase;
@@ -401,8 +860,12 @@ body:has(.shelf-container) {
   color: #000;
 }
 
+.issue-back {
+  font-size: 32px;
+}
+
 .issue-title {
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-weight: 400;
   font-size: 28px;
   letter-spacing: 1.4px;
@@ -434,14 +897,6 @@ body:has(.shelf-container) {
   color: #3D3C3C;
 }
 
-.issue-page--scroll .issue-back {
-  color: #A5A5A5;
-}
-
-.issue-page--scroll .issue-back:hover {
-  color: #3D3C3C;
-}
-
 /* Fill viewport below fixed .header (20px inset + 94px band — same as homepage .wrapper) */
 .issue-page--scroll .issue-wrapper {
   display: flex;
@@ -449,8 +904,23 @@ body:has(.shelf-container) {
   /* Let expanded strip use full viewport width (minus padding); 1440 cap was clipping the open row */
   max-width: none;
   width: 100%;
-  overflow-x: visible;
-  padding-top: 114px;
+}
+
+@media (min-width: 769px) {
+  .issue-page--scroll .issue-wrapper {
+    padding-top: 114px;
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  /* main branch L2 link treatment (mobile uses fixed + black in max-width block) */
+  .issue-page--scroll .issue-back {
+    color: #a5a5a5;
+  }
+
+  .issue-page--scroll .issue-back:hover {
+    color: #3d3c3c;
+  }
 }
 
 .issue-page--scroll .issue-scroll-main {
@@ -462,9 +932,21 @@ body:has(.shelf-container) {
   min-width: 0;
   min-height: 0;
   width: 100%;
+  /* No clip on main — strip shadows / horizontal fan can extend (L2 mobile wrapper uses visible overflow too). */
   overflow-x: visible;
+  overflow-y: visible;
 }
 
+@media (min-width: 769px) {
+  .issue-page--scroll .issue-scroll-main {
+    gap: 122px;
+  }
+}
+
+/*
+ * Figma zine-page-step2 (node 15:2): strip top y=252px; cards 520×520; nominal gap strip→“go back” 62px.
+ * Issue block margin-top 118px; gap 122px — strip nudged up vs 138/102; “back to shelf” Y unchanged.
+ */
 .issue-page--scroll .issue-zine-frame--scroll {
   display: flex;
   flex-direction: column;
@@ -474,16 +956,26 @@ body:has(.shelf-container) {
   max-width: none;
   min-width: 0;
   min-height: 0;
-  gap: 40px;
-  margin-top: 120px;
   overflow-x: visible;
+  overflow-y: visible;
 }
 
-/* Grows with frame: gives #zine-strip-root vertical room to center the deck */
+@media (min-width: 769px) {
+  .issue-page--scroll .issue-zine-frame--scroll {
+    margin-top: 118px;
+  }
+}
+
+/*
+ * No flex-grow — otherwise the strip column eats all vertical space and “back to shelf”
+ * stays pinned to the bottom; gap between strip and link would barely move.
+ */
 .issue-page--scroll .zine-strip-wrap {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   min-width: 0;
   min-height: 0;
   width: 100%;
@@ -492,17 +984,16 @@ body:has(.shelf-container) {
 }
 
 /*
- * Single full-width cell: stretch the strip to the same box in open + closed.
- * (place-items: center shrank the strip to content when collapsed → horizontal jump.)
+ * Single full-width cell: stretch the strip; align-content:start so open/closed share the same top edge (Figma y=252).
  */
 .issue-page--scroll .zine-strip-root {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   justify-items: stretch;
-  align-items: stretch;
-  align-content: center;
+  align-items: start;
+  align-content: start;
   width: 100%;
   margin-left: 0;
   min-width: 0;
@@ -519,38 +1010,55 @@ body:has(.shelf-container) {
   text-align: center;
 }
 
+/*
+ * Outer: overflow visible on both axes so drop-shadow / strip aren’t clipped by scroll pairing.
+ * Inner .zine-strip: overflow hidden; scrollLeft is driven by JS/wheel (no overflow auto/scroll).
+ */
+.issue-page--scroll .zine-strip-outer {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: stretch;
+  align-self: start;
+  overflow: visible;
+  width: 100%;
+  min-width: 0;
+}
+
 /* Strip: closed stack is shrink-to-content + centered in #zine-strip-root; open uses full width to scroll */
 .issue-page--scroll .zine-strip {
   min-width: 0;
   pointer-events: none;
   outline: none;
+  /* Room below cards so filter: drop-shadow isn’t clipped at the bottom edge */
+  padding-bottom: 40px;
+  box-sizing: border-box;
+  overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.issue-page--scroll .zine-strip::-webkit-scrollbar {
+  display: none;
+  height: 0;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--closed {
-  grid-column: 1;
-  grid-row: 1;
-  /* Same outer rectangle as open: full width of root; center the stack inside */
+  /* Same outer rectangle as open: full width; top-align stack (no Y shift on toggle) */
   display: flex;
+  align-items: flex-start;
   justify-content: center;
-  align-items: center;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  justify-self: stretch;
-  align-self: stretch;
 }
 
 .issue-page--scroll .zine-strip.zine-strip--open {
-  grid-column: 1;
-  grid-row: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   max-width: none;
   min-width: 0;
-  justify-self: stretch;
-  align-self: stretch;
 }
 
 /* Interactive + a11y focus live on content-sized scroller (stack / strip row) */
@@ -566,25 +1074,12 @@ body:has(.shelf-container) {
 
 /* —— Closed: stacked deck — horizontal track space matches expanded (no Y jump when toggling) —— */
 .issue-page--scroll .zine-strip--closed {
-  /* Same scroll-container model as open so scrollbar-gutter reserves one stable band */
-  overflow-x: scroll;
-  overflow-y: hidden;
-  /* Reserve space for horizontal scrollbar so open/close doesn’t shift the deck vertically */
-  scrollbar-gutter: stable;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  /* No useful horizontal scroll when collapsed; pan-y still applies to stack */
+  overflow: hidden;
   overscroll-behavior-x: none;
   touch-action: pan-y;
-  -webkit-overflow-scrolling: auto;
 }
 
-/* Hide horizontal scrollbar visually in both states; gutter / layout stays reserved where supported */
-.issue-page--scroll .zine-strip.zine-strip--closed::-webkit-scrollbar,
-.issue-page--scroll .zine-strip.zine-strip--open::-webkit-scrollbar {
-  display: none;
-  height: 0;
-}
+/* Hidden overflow: no scrollbar pseudo-elements needed */
 
 /*
  * Stacked deck: same page box + image rules as open; only position/overlap differs.
@@ -593,20 +1088,27 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip--closed .zine-strip__scroller {
   display: block;
   position: relative;
+  overflow: visible;
   --zine-stack-lift: 2px;
   width: auto;
   min-width: 200px;
-  min-height: calc(520px + (var(--stack-total-n, 1) - 1) * var(--zine-stack-lift) + 16px);
-  height: auto;
+  /* Same band height as open — avoids Y jump when toggling; stack overlap paints within this box */
+  min-height: var(--zine-page-height);
+  height: var(--zine-page-height);
   margin: 0;
-  /* Symmetric horizontal padding so the stack isn’t optically shifted */
-  padding: 10px 14px 20px 14px;
+  /* Horizontal only — vertical padding would change closed vs open alignment */
+  padding: 0 14px;
   box-sizing: content-box;
   cursor: pointer;
   touch-action: manipulation;
 }
 
-/* Same intrinsic sizing as open row: width auto, max-width none, height 520 */
+/* Soft lift on all issue pages (filter paints outside the box; no box-shadow) */
+.issue-page--scroll .zine-strip .zine-strip__page {
+  filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
+}
+
+/* Same intrinsic sizing as open row: width auto, max-width none */
 .issue-page--scroll .zine-strip--closed .zine-strip__page {
   position: absolute;
   left: var(--stack-left, 0px);
@@ -615,7 +1117,7 @@ body:has(.shelf-container) {
   width: auto;
   max-width: none;
   min-width: 0;
-  height: 520px;
+  height: var(--zine-page-height);
   margin: 0;
   padding: 0;
   z-index: calc(var(--stack-total) - var(--page-index));
@@ -627,10 +1129,6 @@ body:has(.shelf-container) {
   align-items: center;
   justify-content: center;
   background: rgba(250, 250, 250, 0.95);
-  box-shadow:
-    2px 3px 0 rgba(0, 0, 0, 0.04),
-    4px 8px 24px rgba(0, 0, 0, 0.1),
-    0 1px 0 rgba(255, 255, 255, 0.6) inset;
 }
 
 .issue-page--scroll .zine-strip--closed .zine-strip__page:nth-child(even) {
@@ -640,7 +1138,7 @@ body:has(.shelf-container) {
 .issue-page--scroll .zine-strip--closed .zine-strip__page.zine-strip__page--text {
   padding: 1rem;
   text-align: center;
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-style: italic;
   font-size: 18px;
   color: #8a8a8a;
@@ -658,17 +1156,12 @@ body:has(.shelf-container) {
 /* Text pages: same min width as open strip */
 .issue-page--scroll .zine-strip__page.zine-strip__page--text {
   min-width: 320px;
-  height: 520px;
+  height: var(--zine-page-height);
 }
 
 /* —— Open: horizontal spread + scroll —— */
 .issue-page--scroll .zine-strip--open {
-  overflow-x: auto;
-  overflow-y: hidden;
-  /* Match closed strip so gutter is reserved whether or not the bar is painted */
-  scrollbar-gutter: stable;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  overflow: hidden;
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
   cursor: default;
@@ -679,12 +1172,15 @@ body:has(.shelf-container) {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
+  align-items: flex-start;
   position: static;
   width: max-content;
-  height: auto;
+  /* Match closed: one row tall as cards */
+  min-height: var(--zine-page-height);
+  height: var(--zine-page-height);
   margin: 0;
-  padding-left: 200px;
-  padding-right: 200px;
+  padding-left: var(--zine-open-padding-x);
+  padding-right: var(--zine-open-padding-x);
   gap: 0;
 }
 
@@ -700,11 +1196,10 @@ body:has(.shelf-container) {
   flex: 0 0 auto;
   width: auto;
   max-width: none;
-  height: 520px;
+  height: var(--zine-page-height);
   margin: 0;
   z-index: auto;
   transform: none;
-  box-shadow: none;
   border-radius: 0;
   overflow: visible;
   display: flex;
@@ -713,7 +1208,7 @@ body:has(.shelf-container) {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-sizing: border-box;
-  font-family: 'Viksjoe Trial', serif;
+  font-family: 'Makiba', serif;
   font-style: italic;
   font-size: 18px;
   color: #A5A5A5;

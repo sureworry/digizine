@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>digizine — pages</title>
   <style>
-    body { font-family: system-ui, sans-serif; padding: 1.5rem; max-width: 32rem; line-height: 1.6; }
+    @font-face {
+      font-family: 'Makiba';
+      src: url('assets/fonts/makibafont13.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    body { font-family: 'Makiba', serif; padding: 1.5rem; max-width: 32rem; line-height: 1.6; }
     a { color: #2563eb; }
     li { margin: 0.35rem 0; }
   </style>
@@ -15,7 +21,7 @@
   <ul>
     <li><a href="index.html">Homepage (shelf)</a></li>
     <li><a href="issue.html">Issue (scroll reader)</a></li>
-    <li><a href="issue-scroll.html">Issue scroll variant</a></li>
+    <li><a href="issue-scroll.html?slug=confessions-of-an-anxious-creator">Issue scroll (L2)</a></li>
     <li><a href="issue-flip.html">Issue flip variant</a></li>
   </ul>
   <p><code>python3 -m http.server 8080</code> then <code>http://localhost:8080/preview.html</code></p>

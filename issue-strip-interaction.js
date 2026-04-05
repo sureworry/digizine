@@ -56,8 +56,15 @@
   }
   // #endregion
 
-  function setupZineStripInteraction(stripEl, options) {
+  function setupZineStripInteraction(stripMount, options) {
     var issue = options.issue;
+    var stripEl =
+      stripMount &&
+      stripMount.classList &&
+      stripMount.classList.contains('zine-strip')
+        ? stripMount
+        : stripMount.querySelector('.zine-strip');
+    if (!stripEl) return;
     var scrollerEl = stripEl.querySelector('.zine-strip__scroller');
     if (!scrollerEl) return;
 
@@ -71,6 +78,20 @@
     var startX = 0;
     var startY = 0;
     var startScrollLeft = 0;
+
+    var touchStripScrollStart = 0;
+    var touchStripStartX = 0;
+    var touchStripStartY = 0;
+    var touchStripLastX = 0;
+    var touchStripAxis = null;
+    var touchHorizNudged = false;
+
+    function isMobileIssueViewport() {
+      return (
+        typeof window.matchMedia !== 'undefined' &&
+        window.matchMedia('(max-width: 768px)').matches
+      );
+    }
 
     function getPages(strip) {
       return strip.querySelectorAll('.zine-strip__page');
@@ -277,7 +298,7 @@
 
     scrollerEl.addEventListener('click', function (e) {
       if (stripEl.classList.contains('zine-strip--open')) {
-        if (pointerDragged || scrollNudged) return;
+        if (pointerDragged || scrollNudged || touchHorizNudged) return;
         e.preventDefault();
         closeStrip(stripEl);
         return;
@@ -315,6 +336,71 @@
       { passive: false }
     );
 
+    /*
+     * Mobile: drive horizontal strip scroll from one-finger swipe (scrollLeft). Native overflow-x scrolling
+     * is unreliable on some iOS / in-viewport setups; pan-y stays on main for page scroll.
+     */
+    /* Listen on scroller (strip has pointer-events: none; scroller receives the touch target). */
+    scrollerEl.addEventListener(
+      'touchstart',
+      function (e) {
+        if (!stripEl.classList.contains('zine-strip--open') || !isMobileIssueViewport()) return;
+        if (e.touches.length !== 1) return;
+        var t = e.touches[0];
+        touchStripStartX = touchStripLastX = t.clientX;
+        touchStripStartY = t.clientY;
+        touchStripAxis = null;
+        touchHorizNudged = false;
+        touchStripScrollStart = stripEl.scrollLeft;
+      },
+      { passive: true }
+    );
+
+    scrollerEl.addEventListener(
+      'touchmove',
+      function (e) {
+        if (!stripEl.classList.contains('zine-strip--open') || !isMobileIssueViewport()) return;
+        if (e.touches.length !== 1) return;
+        var t = e.touches[0];
+        var x = t.clientX;
+        var y = t.clientY;
+        var dx = Math.abs(x - touchStripStartX);
+        var dy = Math.abs(y - touchStripStartY);
+        if (!touchStripAxis && (dx > 12 || dy > 12)) {
+          touchStripAxis = dx > dy ? 'h' : 'v';
+        }
+        if (touchStripAxis === 'h') {
+          var delta = touchStripLastX - x;
+          stripEl.scrollLeft += delta;
+          touchStripLastX = x;
+          e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+
+    scrollerEl.addEventListener(
+      'touchend',
+      function () {
+        if (!stripEl.classList.contains('zine-strip--open') || !isMobileIssueViewport()) return;
+        if (
+          Math.abs(stripEl.scrollLeft - touchStripScrollStart) > TAP_SCROLL_THRESHOLD
+        ) {
+          touchHorizNudged = true;
+        }
+        touchStripAxis = null;
+      },
+      { passive: true }
+    );
+
+    scrollerEl.addEventListener(
+      'touchcancel',
+      function () {
+        touchStripAxis = null;
+      },
+      { passive: true }
+    );
+
     if (typeof scheduleZineStackLayout === 'function') {
       scheduleZineStackLayout(stripEl);
     }
@@ -324,14 +410,18 @@
     // #endregion
 
     var resizeTimer;
-    window.addEventListener('resize', function () {
+    function onViewportResize() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         if (typeof layoutZineStackPositions === 'function') {
           layoutZineStackPositions(stripEl);
         }
       }, 120);
-    });
+    }
+    window.addEventListener('resize', onViewportResize);
+    if (typeof window.visualViewport !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onViewportResize);
+    }
   }
 
   global.setupZineStripInteraction = setupZineStripInteraction;

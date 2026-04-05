@@ -1,10 +1,28 @@
-// Horizontal zine reader: strip DOM + stack positions from open-equivalent widths (−400px advance).
+// Horizontal zine reader: strip DOM + stack positions from open-equivalent widths (−400px desktop; mobile from CSS).
 (function (global) {
-  var FIGMA_STACK_GAP = -400;
+  var DEFAULT_STACK_GAP = -400;
   var MIN_STACK_ADVANCE = 14;
 
+  /** Match styles.css L2 breakpoint (max-width: 768px). */
+  function isIssueReaderMobileViewport() {
+    return (
+      typeof window.matchMedia !== 'undefined' &&
+      window.matchMedia('(max-width: 768px)').matches
+    );
+  }
+
+  /** --zine-stack-gap on .issue-page--scroll (Figma 66:89: −167.692px); default −400px desktop */
+  function getStackGapPx(wrap) {
+    var host = wrap.closest && wrap.closest('.issue-page--scroll');
+    if (!host) return DEFAULT_STACK_GAP;
+    var raw = getComputedStyle(host).getPropertyValue('--zine-stack-gap').trim();
+    if (!raw) return DEFAULT_STACK_GAP;
+    var n = parseFloat(raw);
+    return isFinite(n) ? n : DEFAULT_STACK_GAP;
+  }
+
   /**
-   * Measure each page width as rendered in the OPEN strip (same flex, height 520, natural aspect).
+   * Measure each page width as rendered in the OPEN strip (same flex, fixed row height, natural aspect).
    * When wrap is closed, briefly applies open layout off-screen.
    */
   function measurePageWidthsOpenEquivalent(wrap, scroller) {
@@ -48,7 +66,7 @@
   }
 
   /**
-   * Set --stack-left per page from measured widths: advance = max(MIN, w + FIGMA_STACK_GAP).
+   * Set --stack-left per page from measured widths: advance = max(MIN, w + stackGap).
    * When closed, sets scroller width. When open, only updates CSS vars for next close.
    */
   function layoutZineStackPositions(wrap) {
@@ -56,6 +74,8 @@
     if (!scroller) return;
     var pages = scroller.querySelectorAll('.zine-strip__page');
     if (!pages.length) return;
+
+    var stackGap = getStackGapPx(wrap);
 
     var widths;
     if (wrap.classList.contains('zine-strip--open')) {
@@ -67,17 +87,24 @@
       widths = measurePageWidthsOpenEquivalent(wrap, scroller);
     }
 
-    var x = 0;
+    /*
+     * Lead + trail inset the stack inside the scroller width (justify-content:center on the strip).
+     * Desktop: symmetric 20/20. Mobile: 28/12 (+8px optical shift right vs 20/20; same sum → same total width).
+     */
+    var mobile = isIssueReaderMobileViewport();
+    var leadInset = mobile ? 28 : 20;
+    var trailPad = mobile ? 12 : 20;
+    var x = leadInset;
     for (var k = 0; k < pages.length; k++) {
       pages[k].style.setProperty('--stack-left', x + 'px');
       var pw = widths[k] || 320;
       if (k < pages.length - 1) {
-        x += Math.max(MIN_STACK_ADVANCE, pw + FIGMA_STACK_GAP);
+        x += Math.max(MIN_STACK_ADVANCE, pw + stackGap);
       }
     }
 
     var lastW = widths[widths.length - 1] || 320;
-    var totalW = x + lastW + 40;
+    var totalW = x + lastW + trailPad;
     if (wrap.classList.contains('zine-strip--closed')) {
       scroller.style.width = totalW + 'px';
       delete scroller.dataset.zinePendingStackWidth;
@@ -203,8 +230,12 @@
       scroller.children[c].style.setProperty('--stack-total', String(total));
     }
 
+    var outer = document.createElement('div');
+    outer.className = 'zine-strip-outer';
+    outer.appendChild(wrap);
+
     return {
-      element: wrap
+      element: outer
     };
   }
 

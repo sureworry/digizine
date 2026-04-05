@@ -196,3 +196,29 @@ var ISSUE_DATA = {
 function getIssueBySlug(slug) {
   return ISSUE_DATA[slug] || null;
 }
+
+/*
+ * Homepage sets this right before navigating to issue.html. Static servers (e.g. `serve`) may 301 to a
+ * clean URL and drop ?slug=; reading this after load restores the correct issue on L2.
+ */
+var DIGIZINE_ISSUE_SLUG_STORAGE_KEY = 'digizineIssueSlug';
+
+function setPendingIssueSlug(slug) {
+  try {
+    if (slug) sessionStorage.setItem(DIGIZINE_ISSUE_SLUG_STORAGE_KEY, slug);
+  } catch (e) {}
+}
+
+/** Prefer ?slug=, then one-shot sessionStorage from the shelf click. */
+function takeIssueSlugForIssuePage() {
+  var q = new URLSearchParams(location.search).get('slug');
+  if (q) return q;
+  try {
+    var s = sessionStorage.getItem(DIGIZINE_ISSUE_SLUG_STORAGE_KEY);
+    if (s) {
+      sessionStorage.removeItem(DIGIZINE_ISSUE_SLUG_STORAGE_KEY);
+      return s;
+    }
+  } catch (e) {}
+  return '';
+}

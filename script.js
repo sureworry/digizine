@@ -18,6 +18,7 @@ var dragOffsets = {
   'snake-plant': { dx: 0, dy: 0 },
   'chinese-cat': { dx: 0, dy: 0 },
   books: { dx: 0, dy: 0 },
+  coffee: { dx: 0, dy: 0 },
   cat: { dx: 0, dy: 0 },
   lamp: { dx: 0, dy: 0 },
   'idea-marinade': { dx: 0, dy: 0 },
@@ -141,6 +142,36 @@ function px(n) {
   return typeof n === 'number' && !isNaN(n) ? n + 'px' : '0px';
 }
 
+function isMobileHomepageLayout() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches;
+}
+
+function getHomepageSpec() {
+  if (isMobileHomepageLayout() && typeof MOBILE_HOMEPAGE_LAYOUT_SPEC !== 'undefined') {
+    return MOBILE_HOMEPAGE_LAYOUT_SPEC;
+  }
+  return typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
+}
+
+/**
+ * Desktop homepage: scroll horizontally so the first shelf (left plank + romanticise + cat zone)
+ * is centered in the viewport. Matches .content-frame { left: 160px } and shelf width 1120 in spec.
+ */
+function centerHomepageFirstShelfClusterInView() {
+  if (isMobileHomepageLayout()) return;
+  var shelf = document.querySelector('main.shelf-container');
+  if (!shelf || !document.getElementById('content-frame')) return;
+  var spec = typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
+  var shelfBox = spec && spec.shelf;
+  var frameLeft = 160;
+  var leftShelfCenterX = shelfBox && shelfBox.width != null ? shelfBox.width / 2 : 560;
+  var clusterCenter = frameLeft + leftShelfCenterX;
+  var w = shelf.clientWidth;
+  var maxScroll = Math.max(0, shelf.scrollWidth - w);
+  var target = clusterCenter - w / 2;
+  shelf.scrollLeft = Math.max(0, Math.min(target, maxScroll));
+}
+
 function applyBox(el, x, y, w, h) {
   el.style.removeProperty('inset');
   el.style.left = px(x);
@@ -152,7 +183,38 @@ function applyBox(el, x, y, w, h) {
   el.style.transform = 'none';
 }
 
+/** Web desktop: lamp anchored above #content-frame bottom; dy shifts like former top-based layout. */
+var LAMP_WEB_BOTTOM_OFFSET_PX = 100;
+
+function applyLampBox(el, x, w, h, dy) {
+  var d = typeof dy === 'number' && !isNaN(dy) ? dy : 0;
+  el.style.removeProperty('inset');
+  el.style.left = px(x);
+  el.style.top = 'auto';
+  el.style.bottom = px(LAMP_WEB_BOTTOM_OFFSET_PX - d);
+  el.style.width = px(w);
+  el.style.height = px(h);
+  el.style.right = 'auto';
+  el.style.transform = 'none';
+}
+
+/** Mobile: all zine covers are tap-to-open only (no drag). */
+var MOBILE_ZINE_COVER_DRAG_DISABLED = {
+  romanticise: true,
+  'self-perception': true,
+  observations: true,
+  collection: true,
+  'idea-marinade': true,
+  confessions: true
+};
+
 function isDraggableId(layoutId) {
+  if (isMobileHomepageLayout()) {
+    var m = typeof MOBILE_HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? MOBILE_HOMEPAGE_LAYOUT_SPEC : null;
+    if (!m || !layoutId || layoutId === 'content-frame') return false;
+    if (MOBILE_ZINE_COVER_DRAG_DISABLED[layoutId]) return false;
+    return Object.prototype.hasOwnProperty.call(m, layoutId);
+  }
   return HOMEPAGE_DRAGGABLE_IDS.indexOf(layoutId) !== -1;
 }
 
@@ -161,7 +223,7 @@ function isDraggableId(layoutId) {
  * Zines: spec only. Draggable: spec + dragOffsets.
  */
 function applyLayoutFromSpec() {
-  var spec = typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
+  var spec = getHomepageSpec();
   var frame = document.getElementById('content-frame');
   if (!spec || !frame) return;
 
@@ -177,10 +239,46 @@ function applyLayoutFromSpec() {
     var id = el.getAttribute('data-layout-id');
     if (id === 'content-frame') return;
     var box = spec[id];
-    if (!box) return;
+    if (!box) {
+      el.style.removeProperty('left');
+      el.style.removeProperty('top');
+      el.style.removeProperty('width');
+      el.style.removeProperty('height');
+      el.style.removeProperty('right');
+      el.style.removeProperty('bottom');
+      el.style.removeProperty('transform');
+      return;
+    }
+
+    /*
+     * Mobile first shelf: flex + margins in CSS (unchanged look). Drag = translate(dx,dy) on top — no spec x/y.
+     */
+    if (isMobileHomepageLayout() && (id === 'shelf' || id === 'romanticise' || id === 'cat')) {
+      el.style.removeProperty('left');
+      el.style.removeProperty('top');
+      el.style.removeProperty('width');
+      el.style.removeProperty('height');
+      el.style.removeProperty('right');
+      el.style.removeProperty('bottom');
+      var oFirst = dragOffsets[id] || { dx: 0, dy: 0 };
+      if (oFirst.dx || oFirst.dy) {
+        el.style.setProperty(
+          'transform',
+          'translate(' + oFirst.dx + 'px, ' + oFirst.dy + 'px)'
+        );
+      } else {
+        el.style.removeProperty('transform');
+      }
+      return;
+    }
 
     var x = box.x;
     var y = box.y;
+    if (id === 'lamp' && !isMobileHomepageLayout() && box.width != null && box.height != null) {
+      var oLamp = isDraggableId(id) ? dragOffsets[id] || { dx: 0, dy: 0 } : { dx: 0, dy: 0 };
+      applyLampBox(el, box.x + oLamp.dx, box.width, box.height, oLamp.dy);
+      return;
+    }
     if (isDraggableId(id)) {
       var o = dragOffsets[id] || { dx: 0, dy: 0 };
       x += o.dx;
@@ -201,7 +299,7 @@ function parsePx(styleVal) {
  * Debug: spec x/y, drag offset, final rendered x/y per item.
  */
 function logHomepageLayoutState(reason) {
-  var spec = typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : {};
+  var spec = getHomepageSpec() || {};
   var frame = document.getElementById('content-frame');
   if (!frame) return;
 
@@ -217,12 +315,15 @@ function logHomepageLayoutState(reason) {
     var specY = box.y;
     var off = isDraggableId(id) ? dragOffsets[id] || { dx: 0, dy: 0 } : { dx: 0, dy: 0 };
     var finalX = parsePx(el.style.left);
-    var finalY = parsePx(el.style.top);
+    var finalPos =
+      id === 'lamp' && !isMobileHomepageLayout()
+        ? { x: finalX, bottom: parsePx(el.style.bottom) }
+        : { x: finalX, y: parsePx(el.style.top) };
 
     console.log('  ' + id + ':', {
       spec: { x: specX, y: specY },
       dragOffset: { dx: off.dx, dy: off.dy },
-      final: { x: finalX, y: finalY }
+      final: finalPos
     });
   });
 }
@@ -231,6 +332,14 @@ applyAssetData();
 loadPersistedDraggableLayout();
 applyLayoutFromSpec();
 logHomepageLayoutState('initial load');
+
+window.addEventListener('load', function () {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      centerHomepageFirstShelfClusterInView();
+    });
+  });
+});
 
 function scheduleLayoutReflow() {
   applyLayoutFromSpec();
@@ -243,6 +352,11 @@ if (document.readyState === 'complete') {
   scheduleLayoutReflow();
 } else {
   window.addEventListener('load', scheduleLayoutReflow);
+}
+
+window.addEventListener('resize', scheduleLayoutReflow);
+if (typeof window.visualViewport !== 'undefined' && window.visualViewport) {
+  window.visualViewport.addEventListener('resize', scheduleLayoutReflow);
 }
 
 /**
@@ -262,11 +376,16 @@ if (document.readyState === 'complete') {
     var t = e.target;
     if (!t || !shelf.contains(t)) return false;
     if (t.closest('.zine-cover[data-zine]')) return false;
-    if (t.closest('[data-draggable="true"]')) return false;
+    var dragEl = t.closest('[data-draggable="true"]');
+    if (dragEl) {
+      var pid = dragEl.getAttribute('data-layout-id');
+      if (pid && typeof isDraggableId === 'function' && isDraggableId(pid)) return false;
+    }
     return true;
   }
 
   function onPointerDown(e) {
+    if (isMobileHomepageLayout()) return;
     if (!isPanTarget(e)) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     panning = true;
@@ -286,13 +405,18 @@ if (document.readyState === 'complete') {
   }
 
   function onPointerMove(e) {
-    if (!panning) return;
+    if (!panning || isMobileHomepageLayout()) return;
     applyHorizontalScrollFromClientX(e.clientX);
     e.preventDefault();
   }
 
   function onPointerUp(e) {
     if (!panning) return;
+    if (isMobileHomepageLayout()) {
+      panning = false;
+      shelf.classList.remove('shelf-container--panning');
+      return;
+    }
     /* Commit final scroll on release (move events can be skipped/coalesced before up). */
     if (e && typeof e.clientX === 'number') {
       applyHorizontalScrollFromClientX(e.clientX);
@@ -319,6 +443,7 @@ if (document.readyState === 'complete') {
   document.addEventListener('mouseup', onPointerUp, true);
 
   function onWheel(e) {
+    if (isMobileHomepageLayout()) return;
     var dy = e.deltaY;
     if (dy === 0) return;
     shelf.scrollLeft += dy;
@@ -370,6 +495,10 @@ window.digizineExportLayout = function () {
   if (!frame) return;
 
   var active = null;
+  /** Mobile: long-press before drag starts (allows tap-through without movement). */
+  var pendingHold = null;
+  var MOBILE_DRAG_HOLD_MS = 500;
+  var MOBILE_HOLD_CANCEL_SLOP_PX = 12;
   var DRAG_MOVE_PX = 8;
 
   /** Issues stay below shelves (CSS z-index 50); drag stacking among issues only, max 49. */
@@ -383,23 +512,27 @@ window.digizineExportLayout = function () {
     'chinese-cat': true,
     'snake-plant': true,
     lamp: true,
-    books: true
+    books: true,
+    coffee: true
   };
   var zForegroundDrag = 499;
+  /** Matches .wrapper:has(.shelf-container) .header / .issue-page--scroll .header { z-index } in styles.css */
+  var HOMEPAGE_HEADER_Z_INDEX = 2000;
+  var HOMEPAGE_DRAG_Z_INDEX_CAP = HOMEPAGE_HEADER_Z_INDEX - 1;
 
   function bringToFront(el, id) {
     if (el.classList.contains('zine-cover') || id === 'about') {
       zIssueDrag = Math.min(zIssueDrag + 1, Z_ISSUE_DRAG_MAX);
-      el.style.zIndex = String(zIssueDrag);
+      el.style.zIndex = String(Math.min(zIssueDrag, HOMEPAGE_DRAG_Z_INDEX_CAP));
       return;
     }
     if (id && FOREGROUND_DECORATION_IDS[id]) {
       zForegroundDrag++;
-      el.style.zIndex = String(zForegroundDrag);
+      el.style.zIndex = String(Math.min(zForegroundDrag, HOMEPAGE_DRAG_Z_INDEX_CAP));
       return;
     }
     zForegroundDrag++;
-    el.style.zIndex = String(zForegroundDrag);
+    el.style.zIndex = String(Math.min(zForegroundDrag, HOMEPAGE_DRAG_Z_INDEX_CAP));
   }
 
   function clientPoint(e) {
@@ -409,16 +542,70 @@ window.digizineExportLayout = function () {
     return { x: e.clientX, y: e.clientY };
   }
 
+  function clearPendingHold() {
+    if (pendingHold && pendingHold.timer) {
+      clearTimeout(pendingHold.timer);
+    }
+    pendingHold = null;
+  }
+
+  function armMobileDrag() {
+    if (!pendingHold) return;
+    var ph = pendingHold;
+    pendingHold = null;
+    var t = ph.el;
+    if (!t || !frame.contains(t)) return;
+    var id = ph.id;
+    var pt = { x: ph.lastX, y: ph.lastY };
+    bringToFront(t, id);
+    active = {
+      id: id,
+      downX: pt.x,
+      downY: pt.y,
+      startClientX: pt.x,
+      startClientY: pt.y,
+      startDx: ph.startDx,
+      startDy: ph.startDy,
+      didDrag: false,
+      isZine: ph.isZine
+    };
+  }
+
   function onPointerDown(e) {
     var t = e.target.closest('[data-draggable="true"]');
     if (!t || !frame.contains(t)) return;
     var id = t.getAttribute('data-layout-id');
     if (!isDraggableId(id)) return;
-    e.preventDefault();
+    var layoutSpec = getHomepageSpec();
+    var box = layoutSpec && layoutSpec[id];
+    if (!box) return;
+
     var pt = clientPoint(e);
-    var spec = HOMEPAGE_LAYOUT_SPEC[id];
-    if (!spec) return;
     var o = dragOffsets[id] || { dx: 0, dy: 0 };
+
+    if (isMobileHomepageLayout()) {
+      clearPendingHold();
+      var holdToken = { id: id };
+      pendingHold = {
+        el: t,
+        id: id,
+        lastX: pt.x,
+        lastY: pt.y,
+        startX: pt.x,
+        startY: pt.y,
+        startDx: o.dx,
+        startDy: o.dy,
+        isZine: !!t.getAttribute('data-zine'),
+        token: holdToken,
+        timer: setTimeout(function () {
+          if (!pendingHold || pendingHold.token !== holdToken) return;
+          armMobileDrag();
+        }, MOBILE_DRAG_HOLD_MS)
+      };
+      return;
+    }
+
+    e.preventDefault();
     bringToFront(t, id);
     active = {
       id: id,
@@ -434,6 +621,17 @@ window.digizineExportLayout = function () {
   }
 
   function onPointerMove(e) {
+    if (pendingHold) {
+      var pt = clientPoint(e);
+      pendingHold.lastX = pt.x;
+      pendingHold.lastY = pt.y;
+      var sx = pt.x - pendingHold.startX;
+      var sy = pt.y - pendingHold.startY;
+      if (sx * sx + sy * sy > MOBILE_HOLD_CANCEL_SLOP_PX * MOBILE_HOLD_CANCEL_SLOP_PX) {
+        clearPendingHold();
+      }
+      return;
+    }
     if (!active) return;
     e.preventDefault();
     var pt = clientPoint(e);
@@ -449,6 +647,7 @@ window.digizineExportLayout = function () {
   }
 
   function onPointerUp() {
+    clearPendingHold();
     if (!active) return;
     if (active.didDrag && active.isZine) {
       homepageSuppressZineClick = true;
@@ -462,7 +661,11 @@ window.digizineExportLayout = function () {
   document.addEventListener('mousemove', onPointerMove);
   document.addEventListener('mouseup', onPointerUp);
 
-  frame.addEventListener('touchstart', onPointerDown, { passive: false });
+  /*
+   * passive: true on touchstart — we do not call preventDefault here (mobile hold-drag defers that to
+   * touchmove). passive: false on touchstart alone breaks iOS synthetic click on zine covers.
+   */
+  frame.addEventListener('touchstart', onPointerDown, { passive: true });
   document.addEventListener('touchmove', onPointerMove, { passive: false });
   document.addEventListener('touchend', onPointerUp);
   document.addEventListener('touchcancel', onPointerUp);
@@ -481,7 +684,12 @@ if (contentFrame) {
       e.preventDefault();
       var slug = el.getAttribute('data-slug');
       if (slug) {
-        window.location = 'issue.html?slug=' + encodeURIComponent(slug);
+        if (typeof setPendingIssueSlug === 'function') {
+          setPendingIssueSlug(slug);
+        }
+        var u = new URL('issue.html', window.location.href);
+        u.searchParams.set('slug', slug);
+        window.location.assign(u.href);
       }
     });
   });
