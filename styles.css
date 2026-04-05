@@ -335,6 +335,25 @@ body:has(.shelf-container) {
   }
 }
 
+/*
+ * Wider than 1440px: scale is the larger of (fit height) and (fit scene width to viewport), up to 1.
+ * Scene width ≈ 160px + 2319×scale; matching width to 100vw restores horizontal pan instead of empty gutters.
+ */
+@media (min-width: 1441px) {
+  .wrapper:has(.shelf-container) {
+    --homepage-scale: min(
+      1,
+      max(
+        0.42,
+        max(
+          calc((100svh - var(--homepage-chrome-y)) / 789px),
+          calc((100vw - 160px) / 2319px)
+        )
+      )
+    );
+  }
+}
+
 .content-frame .layout-item {
   position: absolute;
   margin: 0;
@@ -962,22 +981,38 @@ body:has(.shelf-container) {
     gap: 0;
   }
 
+  /*
+   * Vertical centering vs 100svh: equal flex above and below the zine frame so issues stay mid-band as
+   * --zine-page-height changes. ::after keeps ≥122px breathing room before “back to shelf”.
+   * Flex order: ::before → frame → ::after → link (DOM: ::before, frame, back, ::after).
+   */
   .issue-page--scroll .issue-scroll-main::before {
     content: '';
-    order: 2;
-    /* Grows like the old 122px gap; min-height 0 lets it shrink on very short viewports so the page stays within 100dvh */
-    flex: 1 1 122px;
+    order: 1;
+    flex: 1 1 0;
     min-height: 0;
     min-width: 0;
     width: 100%;
   }
 
+  .issue-page--scroll .issue-scroll-main::after {
+    content: '';
+    order: 3;
+    flex: 1 1 0;
+    min-height: 122px;
+    min-width: 0;
+    width: 100%;
+  }
+
   .issue-page--scroll .issue-zine-frame--scroll {
-    order: 1;
+    order: 2;
   }
 
   .issue-page--scroll .issue-back {
-    order: 3;
+    order: 4;
+    position: relative;
+    z-index: 1;
+    transform: translateY(-40px);
   }
 
   /* main branch L2 link treatment (mobile uses fixed + black in max-width block) */
@@ -1005,8 +1040,8 @@ body:has(.shelf-container) {
 }
 
 /*
- * Figma zine-page-step2 (node 15:2): strip top y=252px; cards 520×520.
- * Desktop: flex spacer (::before on .issue-scroll-main) holds ≥122px; frame is content-height (flex 0 1 auto).
+ * Figma zine-page-step2 (node 15:2): cards track --zine-page-height from svh.
+ * Desktop: twin flex spacers on .issue-scroll-main vertically center the frame; no fixed 118px top offset.
  */
 .issue-page--scroll .issue-zine-frame--scroll {
   display: flex;
@@ -1023,7 +1058,7 @@ body:has(.shelf-container) {
 
 @media (min-width: 769px) {
   .issue-page--scroll .issue-zine-frame--scroll {
-    margin-top: 118px;
+    margin-top: 0;
     flex: 0 1 auto;
   }
 }

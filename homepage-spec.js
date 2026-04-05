@@ -13,7 +13,7 @@ var HOMEPAGE_LAYOUT_SPEC = {
   shelf: { x: 0, y: 682.64111328125, width: 1120, height: 93.72390747070312 },
   'shelf-2': { x: 1199, y: 682.64111328125, width: 1120, height: 93.72390747070312 },
   about: {
-    x: 1539,
+    x: 1499,
     y: 134,
     width: 340,
     height: 559.236
@@ -68,7 +68,7 @@ var HOMEPAGE_LAYOUT_SPEC = {
     height: 110
   },
   lamp: {
-    x: 1977,
+    x: 1937,
     y: 189,
     width: 700 / 3,
     height: 350
@@ -80,7 +80,7 @@ var HOMEPAGE_LAYOUT_SPEC = {
     height: 179.47854614257812
   },
   coffee: {
-    x: 1837,
+    x: 1797,
     y: 583,
     width: 152,
     height: 112
