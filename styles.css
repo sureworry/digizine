@@ -489,8 +489,11 @@ body:has(.shelf-container) {
  */
 .issue-page--scroll {
   --zine-stack-gap: -400px;
-  /* ~header padding + frame margin + main gap + back link + wrapper padding + strip shadow */
-  --issue-l2-chrome-y: 460px;
+  /*
+   * Vertical space outside the card square (wrapper top pad + frame margin-top + flex spacer min + back +
+   * wrapper bottom pad + strip padding). Must track reality or 100svh − chrome overshoots and the page scrolls.
+   */
+  --issue-l2-chrome-y: 520px;
   --zine-page-height: min(
     520px,
     max(220px, calc(100svh - var(--issue-l2-chrome-y)))
@@ -907,10 +910,56 @@ body:has(.shelf-container) {
 }
 
 @media (min-width: 769px) {
+  /*
+   * L2 desktop: one viewport tall — no document vertical scroll. Strip height uses --zine-page-height from svh;
+   * flex spacer keeps ≥122px between strip block and “back to shelf”, which sits at the bottom when space allows.
+   */
+  html:has(.issue-page--scroll) {
+    overflow-y: hidden;
+    height: 100%;
+    min-height: 100dvh;
+  }
+
+  body.issue-page--scroll {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
   .issue-page--scroll .issue-wrapper {
     padding-top: 114px;
+    padding-bottom: 32px;
+    min-height: 0;
+    flex: 1 1 auto;
+    max-height: 100%;
+    overflow: hidden;
     overflow-x: visible;
-    overflow-y: visible;
+    overflow-y: hidden;
+  }
+
+  .issue-page--scroll .issue-scroll-main {
+    gap: 0;
+  }
+
+  .issue-page--scroll .issue-scroll-main::before {
+    content: '';
+    order: 2;
+    /* Grows like the old 122px gap; min-height 0 lets it shrink on very short viewports so the page stays within 100dvh */
+    flex: 1 1 122px;
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .issue-page--scroll .issue-zine-frame--scroll {
+    order: 1;
+  }
+
+  .issue-page--scroll .issue-back {
+    order: 3;
   }
 
   /* main branch L2 link treatment (mobile uses fixed + black in max-width block) */
@@ -937,15 +986,9 @@ body:has(.shelf-container) {
   overflow-y: visible;
 }
 
-@media (min-width: 769px) {
-  .issue-page--scroll .issue-scroll-main {
-    gap: 122px;
-  }
-}
-
 /*
- * Figma zine-page-step2 (node 15:2): strip top y=252px; cards 520×520; nominal gap strip→“go back” 62px.
- * Issue block margin-top 118px; gap 122px — strip nudged up vs 138/102; “back to shelf” Y unchanged.
+ * Figma zine-page-step2 (node 15:2): strip top y=252px; cards 520×520.
+ * Desktop: flex spacer (::before on .issue-scroll-main) holds ≥122px; frame is content-height (flex 0 1 auto).
  */
 .issue-page--scroll .issue-zine-frame--scroll {
   display: flex;
@@ -963,13 +1006,10 @@ body:has(.shelf-container) {
 @media (min-width: 769px) {
   .issue-page--scroll .issue-zine-frame--scroll {
     margin-top: 118px;
+    flex: 0 1 auto;
   }
 }
 
-/*
- * No flex-grow — otherwise the strip column eats all vertical space and “back to shelf”
- * stays pinned to the bottom; gap between strip and link would barely move.
- */
 .issue-page--scroll .zine-strip-wrap {
   flex: 0 0 auto;
   display: flex;
