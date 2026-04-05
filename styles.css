@@ -313,10 +313,20 @@ body:has(.shelf-container) {
     );
   }
 
+  /*
+   * Flex keeps the scene horizontally centered whenever --homepage-scale (and thus width) changes with
+   * viewport height (100svh). align-items:center is more stable than margin:auto inside overflow-x scroll.
+   */
+  .wrapper:has(.shelf-container) .shelf-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
   .wrapper:has(.shelf-container) .shelf-scene {
     width: calc(160px + 2319px * var(--homepage-scale));
-    margin-left: auto;
-    margin-right: auto;
+    flex-shrink: 0;
+    align-self: center;
   }
 
   .wrapper:has(.shelf-container) .content-frame {
