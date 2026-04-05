@@ -1,0 +1,94 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "digizine: serve",
+      "type": "shell",
+      "command": "python3 -m http.server 5174",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": {
+        "owner": "digizine",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Serving HTTP"
+        }
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "showReuseMessage": false
+      }
+    },
+    {
+      "label": "digizine: Simple Browser — index (server must be running)",
+      "type": "shell",
+      "command": "echo ${input:digizineSimpleBrowserIndex}",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "echo": false,
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "digizine: Mobile preview — Simple Browser only (server already running)",
+      "type": "shell",
+      "command": "echo ${input:digizineSimpleBrowserMobile}",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "echo": false,
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "digizine: Serve + Simple Browser — index",
+      "dependsOrder": "sequence",
+      "dependsOn": ["digizine: serve"],
+      "type": "shell",
+      "command": "echo ${input:digizineSimpleBrowserIndex}",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "echo": false,
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "digizine: Mobile preview — serve + Cursor Simple Browser",
+      "dependsOrder": "sequence",
+      "dependsOn": ["digizine: serve"],
+      "type": "shell",
+      "command": "echo ${input:digizineSimpleBrowserMobile}",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "echo": false,
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "digizineSimpleBrowserIndex",
+      "type": "command",
+      "command": "simpleBrowser.show",
+      "args": ["http://127.0.0.1:5174/index.html"]
+    },
+    {
+      "id": "digizineSimpleBrowserMobile",
+      "type": "command",
+      "command": "simpleBrowser.show",
+      "args": ["http://127.0.0.1:5174/preview-mobile.html"]
+    }
+  ]
+}
