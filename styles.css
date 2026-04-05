@@ -260,15 +260,9 @@ body:has(.shelf-container) {
   user-select: none;
 }
 
-/* Wraps #content-frame + scroll-track; desktop width matches artboard and centers when viewport is wider. */
-.wrapper:has(.shelf-container) .shelf-scene {
-  position: relative;
-  width: 100%;
-}
-
 /* Matches content-frame offset + width from homepage-spec (160 + 2319). */
 .wrapper:has(.shelf-container) .content-frame-scroll-track {
-  width: 100%;
+  width: calc(160px + 2319px);
   height: 1px;
   margin: 0;
   padding: 0;
@@ -313,44 +307,13 @@ body:has(.shelf-container) {
     );
   }
 
-  /*
-   * Flex keeps the scene horizontally centered whenever --homepage-scale (and thus width) changes with
-   * viewport height (100svh). align-items:center is more stable than margin:auto inside overflow-x scroll.
-   */
-  .wrapper:has(.shelf-container) .shelf-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .wrapper:has(.shelf-container) .shelf-scene {
-    width: calc(160px + 2319px * var(--homepage-scale));
-    flex-shrink: 0;
-    align-self: center;
-  }
-
   .wrapper:has(.shelf-container) .content-frame {
     transform: scale(var(--homepage-scale));
     transform-origin: top left;
   }
-}
 
-/*
- * Wider than 1440px: scale is the larger of (fit height) and (fit scene width to viewport), up to 1.
- * Scene width ≈ 160px + 2319×scale; matching width to 100vw restores horizontal pan instead of empty gutters.
- */
-@media (min-width: 1441px) {
-  .wrapper:has(.shelf-container) {
-    --homepage-scale: min(
-      1,
-      max(
-        0.42,
-        max(
-          calc((100svh - var(--homepage-chrome-y)) / 789px),
-          calc((100vw - 160px) / 2319px)
-        )
-      )
-    );
+  .wrapper:has(.shelf-container) .content-frame-scroll-track {
+    width: calc(160px + 2319px * var(--homepage-scale));
   }
 }
 
@@ -969,12 +932,12 @@ body:has(.shelf-container) {
   .issue-page--scroll .issue-wrapper {
     padding-top: 114px;
     padding-bottom: 32px;
+    padding-left: 0;
+    padding-right: 0;
     min-height: 0;
     flex: 1 1 auto;
     max-height: 100%;
-    overflow: hidden;
-    overflow-x: visible;
-    overflow-y: hidden;
+    overflow: visible;
   }
 
   .issue-page--scroll .issue-scroll-main {
