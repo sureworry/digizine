@@ -183,11 +183,13 @@ function applyBox(el, x, y, w, h) {
   el.style.transform = 'none';
 }
 
-/** Mobile: not draggable — keep click-to-open only (desktop spec never listed these in HOMEPAGE_DRAGGABLE_IDS). */
-var MOBILE_NON_DRAGGABLE_ZINE_IDS = {
+/** Mobile: all zine covers are tap-to-open only (no drag). */
+var MOBILE_ZINE_COVER_DRAG_DISABLED = {
+  romanticise: true,
   'self-perception': true,
   observations: true,
   collection: true,
+  'idea-marinade': true,
   confessions: true
 };
 
@@ -195,7 +197,7 @@ function isDraggableId(layoutId) {
   if (isMobileHomepageLayout()) {
     var m = typeof MOBILE_HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? MOBILE_HOMEPAGE_LAYOUT_SPEC : null;
     if (!m || !layoutId || layoutId === 'content-frame') return false;
-    if (MOBILE_NON_DRAGGABLE_ZINE_IDS[layoutId]) return false;
+    if (MOBILE_ZINE_COVER_DRAG_DISABLED[layoutId]) return false;
     return Object.prototype.hasOwnProperty.call(m, layoutId);
   }
   return HOMEPAGE_DRAGGABLE_IDS.indexOf(layoutId) !== -1;
@@ -491,6 +493,10 @@ window.digizineExportLayout = function () {
   if (!frame) return;
 
   var active = null;
+  /** Mobile: long-press before drag starts (allows tap-through without movement). */
+  var pendingHold = null;
+  var MOBILE_DRAG_HOLD_MS = 500;
+  var MOBILE_HOLD_CANCEL_SLOP_PX = 12;
   var DRAG_MOVE_PX = 8;
 
   /** Issues stay below shelves (CSS z-index 50); drag stacking among issues only, max 49. */
@@ -534,17 +540,70 @@ window.digizineExportLayout = function () {
     return { x: e.clientX, y: e.clientY };
   }
 
+  function clearPendingHold() {
+    if (pendingHold && pendingHold.timer) {
+      clearTimeout(pendingHold.timer);
+    }
+    pendingHold = null;
+  }
+
+  function armMobileDrag() {
+    if (!pendingHold) return;
+    var ph = pendingHold;
+    pendingHold = null;
+    var t = ph.el;
+    if (!t || !frame.contains(t)) return;
+    var id = ph.id;
+    var pt = { x: ph.lastX, y: ph.lastY };
+    bringToFront(t, id);
+    active = {
+      id: id,
+      downX: pt.x,
+      downY: pt.y,
+      startClientX: pt.x,
+      startClientY: pt.y,
+      startDx: ph.startDx,
+      startDy: ph.startDy,
+      didDrag: false,
+      isZine: ph.isZine
+    };
+  }
+
   function onPointerDown(e) {
     var t = e.target.closest('[data-draggable="true"]');
     if (!t || !frame.contains(t)) return;
     var id = t.getAttribute('data-layout-id');
     if (!isDraggableId(id)) return;
-    e.preventDefault();
-    var pt = clientPoint(e);
     var layoutSpec = getHomepageSpec();
     var box = layoutSpec && layoutSpec[id];
     if (!box) return;
+
+    var pt = clientPoint(e);
     var o = dragOffsets[id] || { dx: 0, dy: 0 };
+
+    if (isMobileHomepageLayout()) {
+      clearPendingHold();
+      var holdToken = { id: id };
+      pendingHold = {
+        el: t,
+        id: id,
+        lastX: pt.x,
+        lastY: pt.y,
+        startX: pt.x,
+        startY: pt.y,
+        startDx: o.dx,
+        startDy: o.dy,
+        isZine: !!t.getAttribute('data-zine'),
+        token: holdToken,
+        timer: setTimeout(function () {
+          if (!pendingHold || pendingHold.token !== holdToken) return;
+          armMobileDrag();
+        }, MOBILE_DRAG_HOLD_MS)
+      };
+      return;
+    }
+
+    e.preventDefault();
     bringToFront(t, id);
     active = {
       id: id,
@@ -560,6 +619,17 @@ window.digizineExportLayout = function () {
   }
 
   function onPointerMove(e) {
+    if (pendingHold) {
+      var pt = clientPoint(e);
+      pendingHold.lastX = pt.x;
+      pendingHold.lastY = pt.y;
+      var sx = pt.x - pendingHold.startX;
+      var sy = pt.y - pendingHold.startY;
+      if (sx * sx + sy * sy > MOBILE_HOLD_CANCEL_SLOP_PX * MOBILE_HOLD_CANCEL_SLOP_PX) {
+        clearPendingHold();
+      }
+      return;
+    }
     if (!active) return;
     e.preventDefault();
     var pt = clientPoint(e);
@@ -575,6 +645,7 @@ window.digizineExportLayout = function () {
   }
 
   function onPointerUp() {
+    clearPendingHold();
     if (!active) return;
     if (active.didDrag && active.isZine) {
       homepageSuppressZineClick = true;
@@ -588,7 +659,11 @@ window.digizineExportLayout = function () {
   document.addEventListener('mousemove', onPointerMove);
   document.addEventListener('mouseup', onPointerUp);
 
-  frame.addEventListener('touchstart', onPointerDown, { passive: false });
+  /*
+   * passive: true on touchstart — we do not call preventDefault here (mobile hold-drag defers that to
+   * touchmove). passive: false on touchstart alone breaks iOS synthetic click on zine covers.
+   */
+  frame.addEventListener('touchstart', onPointerDown, { passive: true });
   document.addEventListener('touchmove', onPointerMove, { passive: false });
   document.addEventListener('touchend', onPointerUp);
   document.addEventListener('touchcancel', onPointerUp);
