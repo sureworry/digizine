@@ -410,14 +410,18 @@
     // #endregion
 
     var resizeTimer;
-    window.addEventListener('resize', function () {
+    function onViewportResize() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         if (typeof layoutZineStackPositions === 'function') {
           layoutZineStackPositions(stripEl);
         }
       }, 120);
-    });
+    }
+    window.addEventListener('resize', onViewportResize);
+    if (typeof window.visualViewport !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onViewportResize);
+    }
   }
 
   global.setupZineStripInteraction = setupZineStripInteraction;

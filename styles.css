@@ -1,15 +1,24 @@
+/* Load first URL that exists: place Makiba as makibafont13.ttf, Makiba.ttf, or makiba.ttf under assets/fonts/. */
 @font-face {
   font-family: 'Makiba';
-  src: url('assets/fonts/makibafont13.ttf') format('truetype');
+  src:
+    url('assets/fonts/makibafont13.ttf') format('truetype'),
+    url('assets/fonts/Makiba.ttf') format('truetype'),
+    url('assets/fonts/makiba.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
   font-family: 'Makiba';
-  src: url('assets/fonts/makibafont13.ttf') format('truetype');
+  src:
+    url('assets/fonts/makibafont13.ttf') format('truetype'),
+    url('assets/fonts/Makiba.ttf') format('truetype'),
+    url('assets/fonts/makiba.ttf') format('truetype');
   font-weight: normal;
   font-style: italic;
+  font-display: swap;
 }
 
 * {
@@ -34,6 +43,7 @@ body.issue-page--scroll {
 html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
+  font-family: 'Makiba', ui-serif, serif;
 }
 
 /* Issue reader: horizontal strip / shadows extend past layout — avoid root clipping on the right */
@@ -90,6 +100,7 @@ body:has(.shelf-container) {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   column-gap: 0;
+  font-family: 'Makiba', ui-serif, serif;
 }
 
 /* Fixed site header — identical geometry on homepage + issue (viewport; L1↔L2). */
@@ -281,6 +292,31 @@ body:has(.shelf-container) {
   margin-right: 0;
 }
 
+/*
+ * Homepage web (desktop): scale the 2319×789 artboard to fit available viewport height — same svh-based
+ * idea as L2 --zine-page-height. Mobile layout (≤768px) uses its own spec + rules; no scale there.
+ */
+@media (min-width: 769px) {
+  .wrapper:has(.shelf-container) {
+    /* Header band + shelf top offset (90px) + margin; tune if clip/peek at extremes */
+    --homepage-chrome-y: 230px;
+    /* Divide by 789px so the result is unitless — required for transform: scale() */
+    --homepage-scale: min(
+      1,
+      max(0.42, calc((100svh - var(--homepage-chrome-y)) / 789px))
+    );
+  }
+
+  .wrapper:has(.shelf-container) .content-frame {
+    transform: scale(var(--homepage-scale));
+    transform-origin: top left;
+  }
+
+  .wrapper:has(.shelf-container) .content-frame-scroll-track {
+    width: calc(160px + 2319px * var(--homepage-scale));
+  }
+}
+
 .content-frame .layout-item {
   position: absolute;
   margin: 0;
@@ -390,6 +426,14 @@ body:has(.shelf-container) {
   z-index: 205;
 }
 
+/* Web desktop: lamp sits 100px above artboard bottom (sync LAMP_WEB_BOTTOM_OFFSET_PX in script.js); x/width/height + drag from JS */
+@media (min-width: 769px) {
+  .wrapper:has(.shelf-container) .content-frame .layout-item[data-layout-id='lamp'] {
+    top: auto;
+    bottom: 100px;
+  }
+}
+
 .content-frame .decoration-coffee {
   z-index: 206;
 }
@@ -441,10 +485,16 @@ body:has(.shelf-container) {
 
 /*
  * L2 issue reader defaults (desktop). Mobile overrides in @media (max-width: 768px) below — must follow base.
+ * --zine-page-height scales with viewport height (svh) so short/tall windows keep a balanced composition.
  */
 .issue-page--scroll {
   --zine-stack-gap: -400px;
-  --zine-page-height: 520px;
+  /* ~header padding + frame margin + main gap + back link + wrapper padding + strip shadow */
+  --issue-l2-chrome-y: 460px;
+  --zine-page-height: min(
+    520px,
+    max(220px, calc(100svh - var(--issue-l2-chrome-y)))
+  );
   --zine-open-padding-x: 200px;
 }
 
@@ -658,7 +708,8 @@ body:has(.shelf-container) {
     aspect-ratio: 97 / 100;
     height: auto !important;
     flex: 0 0 auto;
-    margin: 0 0 0 -20px;
+    /* Desktop cat y is in homepage-spec; mobile uses flex — negative top margin nudges up (sync with spec tweaks). */
+    margin: -5px 0 0 -20px;
   }
 
   .wrapper:has(.shelf-container) .mobile-first-shelf-group .layout-shelf[data-layout-id='shelf'] {
@@ -692,13 +743,16 @@ body:has(.shelf-container) {
   }
 
   /*
-   * L2 issue reader — Figma node 66:89 (mobile-view-L2): 390×844, cards 218×218, strip top y=293,
-   * “back to shelf” fixed to bottom + safe area (y=704 was 844px-tall Figma only). Stack gap −167.692px…
-   * Open strip horizontal inset matches web model: symmetric --zine-open-padding-x (scaled for mobile).
+   * L2 issue reader — Figma node 66:89 (mobile-view-L2): cards up to 218×218; height tracks svh on short screens.
+   * “back to shelf” fixed to bottom + safe area. Stack gap −167.692px…
    */
   .issue-page--scroll {
     --zine-stack-gap: -167.692px;
-    --zine-page-height: 218px;
+    --issue-l2-chrome-y-mobile: 300px;
+    --zine-page-height: min(
+      218px,
+      max(160px, calc(100svh - var(--issue-l2-chrome-y-mobile)))
+    );
     --zine-open-padding-x: 84px;
   }
 

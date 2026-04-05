@@ -183,6 +183,21 @@ function applyBox(el, x, y, w, h) {
   el.style.transform = 'none';
 }
 
+/** Web desktop: lamp anchored above #content-frame bottom; dy shifts like former top-based layout. */
+var LAMP_WEB_BOTTOM_OFFSET_PX = 100;
+
+function applyLampBox(el, x, w, h, dy) {
+  var d = typeof dy === 'number' && !isNaN(dy) ? dy : 0;
+  el.style.removeProperty('inset');
+  el.style.left = px(x);
+  el.style.top = 'auto';
+  el.style.bottom = px(LAMP_WEB_BOTTOM_OFFSET_PX - d);
+  el.style.width = px(w);
+  el.style.height = px(h);
+  el.style.right = 'auto';
+  el.style.transform = 'none';
+}
+
 /** Mobile: all zine covers are tap-to-open only (no drag). */
 var MOBILE_ZINE_COVER_DRAG_DISABLED = {
   romanticise: true,
@@ -218,19 +233,6 @@ function applyLayoutFromSpec() {
     frame.style.height = px(cf.height);
     /* Full artboard width — do not cap with 100% or the right column (shelf-2, about, etc.) clips off-screen. */
     frame.style.maxWidth = 'none';
-  }
-
-  /* Web desktop: pin lamp Y using viewport/shelf bottom vs #content-frame top (not artboard height — avoids gap on tall windows). */
-  var lampShelfBottomMinusFrameTop = null;
-  if (!isMobileHomepageLayout()) {
-    var shelfForLamp = document.querySelector('main.shelf-container');
-    if (shelfForLamp) {
-      var sR = shelfForLamp.getBoundingClientRect();
-      var fR = frame.getBoundingClientRect();
-      if (fR.height > 0) {
-        lampShelfBottomMinusFrameTop = sR.bottom - fR.top;
-      }
-    }
   }
 
   frame.querySelectorAll('[data-layout-id]').forEach(function (el) {
@@ -272,16 +274,10 @@ function applyLayoutFromSpec() {
 
     var x = box.x;
     var y = box.y;
-    /* Web desktop: lamp base sits on the bottom of the main shelf/viewport area (tall windows no longer show a gap under the pole). */
-    if (id === 'lamp' && !isMobileHomepageLayout() && box.height != null) {
-      if (lampShelfBottomMinusFrameTop != null) {
-        y = lampShelfBottomMinusFrameTop - box.height;
-      } else {
-        var cfLamp = spec['content-frame'];
-        if (cfLamp && cfLamp.height != null) {
-          y = cfLamp.height - box.height;
-        }
-      }
+    if (id === 'lamp' && !isMobileHomepageLayout() && box.width != null && box.height != null) {
+      var oLamp = isDraggableId(id) ? dragOffsets[id] || { dx: 0, dy: 0 } : { dx: 0, dy: 0 };
+      applyLampBox(el, box.x + oLamp.dx, box.width, box.height, oLamp.dy);
+      return;
     }
     if (isDraggableId(id)) {
       var o = dragOffsets[id] || { dx: 0, dy: 0 };
@@ -319,12 +315,15 @@ function logHomepageLayoutState(reason) {
     var specY = box.y;
     var off = isDraggableId(id) ? dragOffsets[id] || { dx: 0, dy: 0 } : { dx: 0, dy: 0 };
     var finalX = parsePx(el.style.left);
-    var finalY = parsePx(el.style.top);
+    var finalPos =
+      id === 'lamp' && !isMobileHomepageLayout()
+        ? { x: finalX, bottom: parsePx(el.style.bottom) }
+        : { x: finalX, y: parsePx(el.style.top) };
 
     console.log('  ' + id + ':', {
       spec: { x: specX, y: specY },
       dragOffset: { dx: off.dx, dy: off.dy },
-      final: { x: finalX, y: finalY }
+      final: finalPos
     });
   });
 }
@@ -356,6 +355,9 @@ if (document.readyState === 'complete') {
 }
 
 window.addEventListener('resize', scheduleLayoutReflow);
+if (typeof window.visualViewport !== 'undefined' && window.visualViewport) {
+  window.visualViewport.addEventListener('resize', scheduleLayoutReflow);
+}
 
 /**
  * Homepage scroll frame: drag to pan horizontally; wheel/trackpad deltaY -> scrollLeft
