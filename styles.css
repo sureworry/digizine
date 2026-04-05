@@ -260,9 +260,15 @@ body:has(.shelf-container) {
   user-select: none;
 }
 
+/* Wraps #content-frame + scroll-track; desktop width matches artboard and centers when viewport is wider. */
+.wrapper:has(.shelf-container) .shelf-scene {
+  position: relative;
+  width: 100%;
+}
+
 /* Matches content-frame offset + width from homepage-spec (160 + 2319). */
 .wrapper:has(.shelf-container) .content-frame-scroll-track {
-  width: calc(160px + 2319px);
+  width: 100%;
   height: 1px;
   margin: 0;
   padding: 0;
@@ -307,13 +313,15 @@ body:has(.shelf-container) {
     );
   }
 
+  .wrapper:has(.shelf-container) .shelf-scene {
+    width: calc(160px + 2319px * var(--homepage-scale));
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .wrapper:has(.shelf-container) .content-frame {
     transform: scale(var(--homepage-scale));
     transform-origin: top left;
-  }
-
-  .wrapper:has(.shelf-container) .content-frame-scroll-track {
-    width: calc(160px + 2319px * var(--homepage-scale));
   }
 }
 
