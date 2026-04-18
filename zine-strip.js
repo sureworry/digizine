@@ -92,16 +92,11 @@
      * Desktop: symmetric 20/20. Mobile: 28/12 (+8px optical shift right vs 20/20; same sum → same total width).
      */
     var mobile = isIssueReaderMobileViewport();
-    var innerW =
-      mobile && typeof window.innerWidth === 'number' && isFinite(window.innerWidth)
-        ? window.innerWidth
-        : null;
     var leadInset = mobile ? 28 : 20;
     var trailPad = mobile ? 12 : 20;
     var x = leadInset;
     for (var k = 0; k < pages.length; k++) {
-      var stackLeftPx = innerW == null ? x : Math.min(x, innerW);
-      pages[k].style.setProperty('--stack-left', stackLeftPx + 'px');
+      pages[k].style.setProperty('--stack-left', x + 'px');
       var pw = widths[k] || 320;
       if (k < pages.length - 1) {
         x += Math.max(MIN_STACK_ADVANCE, pw + stackGap);
@@ -110,9 +105,8 @@
 
     var lastW = widths[widths.length - 1] || 320;
     var totalW = x + lastW + trailPad;
-    var closedScrollerWidthPx = innerW == null ? totalW : Math.min(totalW, innerW);
     if (wrap.classList.contains('zine-strip--closed')) {
-      scroller.style.width = closedScrollerWidthPx + 'px';
+      scroller.style.width = totalW + 'px';
       delete scroller.dataset.zinePendingStackWidth;
     } else {
       /* Used when FLIP closes: width must apply only after .zine-strip--closed (open row uses max-content) */
@@ -123,20 +117,6 @@
   function applyPendingClosedScrollerWidth(wrap) {
     var sc = wrap.querySelector('.zine-strip__scroller');
     if (!sc) return;
-    if (isIssueReaderMobileViewport()) {
-      var pending = sc.dataset.zinePendingStackWidth;
-      if (pending) {
-        var tw = parseFloat(pending, 10);
-        var iw = window.innerWidth;
-        if (isFinite(tw)) {
-          var capped =
-            typeof iw === 'number' && isFinite(iw) ? Math.min(tw, iw) : tw;
-          sc.style.width = capped + 'px';
-        }
-        delete sc.dataset.zinePendingStackWidth;
-      }
-      return;
-    }
     var w = sc.dataset.zinePendingStackWidth;
     if (w) sc.style.width = w + 'px';
   }

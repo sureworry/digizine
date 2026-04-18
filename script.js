@@ -25,13 +25,9 @@ var dragOffsets = {
   romanticise: { dx: 0, dy: 0 },
   about: { dx: 0, dy: 0 }
 };
-/** Per-element Y/top captured on initial load for drop-time gravity restore. */
-var draggableOriginalYByElement = new Map();
 
 /** After dragging a zine cover, skip the synthetic click that would open the issue. */
 var homepageSuppressZineClick = false;
-/** After dragging lamp, skip the synthetic click so theme does not toggle on release. */
-var homepageSuppressLampToggleClick = false;
 
 /**
  * When false (default), reload always uses HOMEPAGE_LAYOUT_SPEC — defaults stay locked in source.
@@ -126,13 +122,6 @@ function getZineId(el) {
   return el.getAttribute('data-zine') || '';
 }
 
-function getHomepageAssetById(id) {
-  for (var i = 0; i < HOMEPAGE_ASSETS.length; i++) {
-    if (HOMEPAGE_ASSETS[i] && HOMEPAGE_ASSETS[i].id === id) return HOMEPAGE_ASSETS[i];
-  }
-  return null;
-}
-
 function applyAssetData() {
   var map = {};
   HOMEPAGE_ASSETS.forEach(function (a) {
@@ -162,14 +151,6 @@ function getHomepageSpec() {
     return MOBILE_HOMEPAGE_LAYOUT_SPEC;
   }
   return typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
-}
-
-function captureOriginalDraggableYPositions() {
-  var frame = document.getElementById('content-frame');
-  if (!frame) return;
-  frame.querySelectorAll('[data-draggable="true"]').forEach(function (el) {
-    draggableOriginalYByElement.set(el, el.offsetTop);
-  });
 }
 
 /**
@@ -214,7 +195,7 @@ function applyLampBox(el, x, w, h, dy) {
   el.style.width = px(w);
   el.style.height = px(h);
   el.style.right = 'auto';
-  /* Keep transform managed by dark-mode lamp swap so sizing stays stable across reflows. */
+  el.style.transform = 'none';
 }
 
 /** Mobile: all zine covers are tap-to-open only (no drag). */
@@ -350,7 +331,6 @@ function logHomepageLayoutState(reason) {
 applyAssetData();
 loadPersistedDraggableLayout();
 applyLayoutFromSpec();
-captureOriginalDraggableYPositions();
 logHomepageLayoutState('initial load');
 
 window.addEventListener('load', function () {
@@ -580,7 +560,6 @@ window.digizineExportLayout = function () {
     bringToFront(t, id);
     active = {
       id: id,
-      el: t,
       downX: pt.x,
       downY: pt.y,
       startClientX: pt.x,
@@ -630,7 +609,6 @@ window.digizineExportLayout = function () {
     bringToFront(t, id);
     active = {
       id: id,
-      el: t,
       downX: pt.x,
       downY: pt.y,
       startClientX: pt.x,
@@ -671,25 +649,8 @@ window.digizineExportLayout = function () {
   function onPointerUp() {
     clearPendingHold();
     if (!active) return;
-    if (active.didDrag && active.id && dragOffsets[active.id]) {
-      var storedTop = active.el ? draggableOriginalYByElement.get(active.el) : null;
-      var currentTop = active.el ? active.el.offsetTop : null;
-      var currentDy = dragOffsets[active.id].dy || 0;
-      var resetDy =
-        typeof storedTop === 'number' && typeof currentTop === 'number'
-          ? currentDy + (storedTop - currentTop)
-          : 0;
-      dragOffsets[active.id] = {
-        dx: dragOffsets[active.id].dx || 0,
-        dy: resetDy
-      };
-      applyLayoutFromSpec();
-    }
     if (active.didDrag && active.isZine) {
       homepageSuppressZineClick = true;
-    }
-    if (active.didDrag && active.id === 'lamp') {
-      homepageSuppressLampToggleClick = true;
     }
     active = null;
     savePersistedDraggableLayout();
@@ -722,10 +683,6 @@ if (contentFrame) {
       }
       e.preventDefault();
       var slug = el.getAttribute('data-slug');
-      if (!slug) {
-        var asset = getHomepageAssetById(getZineId(el));
-        slug = asset && asset.slug ? asset.slug : '';
-      }
       if (slug) {
         if (typeof setPendingIssueSlug === 'function') {
           setPendingIssueSlug(slug);
@@ -737,125 +694,3 @@ if (contentFrame) {
     });
   });
 }
-
-var DIGIZINE_THEME_STORAGE_KEY = 'digizineTheme';
-
-function persistHomepageTheme(isDark) {
-  try {
-    var v = isDark ? 'dark' : 'light';
-    localStorage.setItem(DIGIZINE_THEME_STORAGE_KEY, v);
-  } catch (e) {}
-}
-
-function readPersistedHomepageThemeIsDark() {
-  try {
-    return localStorage.getItem(DIGIZINE_THEME_STORAGE_KEY) === 'dark';
-  } catch (e) {
-    return false;
-  }
-}
-
-function setHomepageThemeClass(isDark) {
-  document.body.classList.toggle('homepage-lamp-active', !!isDark);
-}
-
-function digizineApplyHomepageThemeFromStorage() {
-  setHomepageThemeClass(readPersistedHomepageThemeIsDark());
-  if (typeof window.__digizineApplyHomepageLampThemeAssets === 'function') {
-    window.__digizineApplyHomepageLampThemeAssets();
-  }
-}
-
-window.addEventListener('storage', function (e) {
-  if (!e || e.key !== DIGIZINE_THEME_STORAGE_KEY) {
-    return;
-  }
-  digizineApplyHomepageThemeFromStorage();
-});
-
-window.addEventListener('pageshow', function (e) {
-  if (e && e.persisted) {
-    digizineApplyHomepageThemeFromStorage();
-  }
-});
-
-document.addEventListener('visibilitychange', function () {
-  if (!document.hidden) {
-    digizineApplyHomepageThemeFromStorage();
-  }
-});
-
-/* Web homepage: tapping lamp toggles dark shelf backdrop + white title text. */
-(function initHomepageLampThemeToggle() {
-  if (!contentFrame) return;
-  var lamp = contentFrame.querySelector('[data-layout-id="lamp"]');
-  if (!lamp) return;
-  var body = document.body;
-  var LAMP_DARK_VISUAL_SCALE = 1.09;
-
-  var DARK_ASSET_SOURCES = {
-    romanticise: 'assets/dark mode/cover/romanticise the mundane.png',
-    'self-perception': 'assets/dark mode/cover/self-preception.png',
-    observations: 'assets/dark mode/cover/observations as an introvert.png',
-    collection: 'assets/dark mode/cover/collectionofstillherestilllife.png',
-    'idea-marinade': 'assets/dark mode/cover/the idea marinade.png',
-    about: 'assets/dark mode/cover/about.png',
-    confessions: 'assets/dark mode/cover/confessions of an anxious creator.png',
-    lamp: 'assets/dark mode/decorations/lamp.png'
-  };
-
-  var swapTargets = {};
-  var originalSources = {};
-
-  Object.keys(DARK_ASSET_SOURCES).forEach(function (id) {
-    var el = contentFrame.querySelector('[data-layout-id="' + id + '"]');
-    if (!el || el.tagName !== 'IMG') return;
-    swapTargets[id] = el;
-    originalSources[id] = el.getAttribute('src');
-    var darkSrc = DARK_ASSET_SOURCES[id];
-    if (darkSrc) {
-      var img = new Image();
-      img.src = darkSrc;
-    }
-  });
-
-  function applyLampThemeAssets() {
-    var active = body.classList.contains('homepage-lamp-active') && !isMobileHomepageLayout();
-    Object.keys(swapTargets).forEach(function (id) {
-      var el = swapTargets[id];
-      if (!el) return;
-      var src = active ? DARK_ASSET_SOURCES[id] : originalSources[id];
-      if (!src) return;
-      if (el.getAttribute('src') !== src) {
-        el.setAttribute('src', src);
-      }
-      if (id === 'lamp') {
-        /* Keep natural fit; dark-only proportional scale compensates artwork size difference. */
-        el.style.objectFit = 'contain';
-        el.style.objectPosition = 'bottom center';
-        el.style.transformOrigin = 'bottom center';
-        el.style.transform = active ? 'scale(' + LAMP_DARK_VISUAL_SCALE + ')' : 'none';
-      }
-    });
-  }
-
-  window.__digizineApplyHomepageLampThemeAssets = applyLampThemeAssets;
-
-  lamp.addEventListener('click', function () {
-    if (isMobileHomepageLayout()) return;
-    if (homepageSuppressLampToggleClick) {
-      homepageSuppressLampToggleClick = false;
-      return;
-    }
-    var nextDark = !document.body.classList.contains('homepage-lamp-active');
-    setHomepageThemeClass(nextDark);
-    persistHomepageTheme(nextDark);
-    applyLampThemeAssets();
-  });
-
-  window.addEventListener('resize', applyLampThemeAssets);
-  applyLampThemeAssets();
-})();
-
-/* Apply persisted theme on every page (homepage + L2) after lamp asset hooks exist. */
-digizineApplyHomepageThemeFromStorage();

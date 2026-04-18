@@ -3,8 +3,8 @@
   "private": true,
   "scripts": {
     "build": "esbuild vercel-analytics-entry.mjs --bundle --format=esm --outfile=vercel-analytics.js --define:process.env.NODE_ENV=\\\"production\\\"",
-    "preview": "python3 -m http.server 5173",
-    "preview:node": "npx --yes serve . -l 5173 --no-clipboard",
+    "preview": "npx --yes serve . -l 5173 --no-clipboard",
+    "preview:py": "python3 -m http.server 5173",
     "browser": "bash scripts/open-in-browser.sh",
     "browser:mobile": "bash scripts/open-in-browser.sh mobile"
   },
