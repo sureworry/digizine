@@ -28,17 +28,19 @@
       padding: 1px 5px;
     }
     .frame-wrap {
-      max-width: 406px;
+      width: 100%;
+      max-width: min(406px, 100vw);
       margin: 0 auto 24px;
       padding: 12px;
       background: #111;
       border-radius: 28px;
       box-sizing: border-box;
+      overflow: hidden;
     }
     iframe {
       display: block;
       width: 390px;
-      max-width: 100%;
+      max-width: min(390px, 100vw);
       height: min(844px, calc(100vh - 120px));
       margin: 0 auto;
       border: 0;

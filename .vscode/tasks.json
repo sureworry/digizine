@@ -4,7 +4,7 @@
     {
       "label": "digizine: serve",
       "type": "shell",
-      "command": "python3 -m http.server 5174",
+      "command": "python3 -m http.server 5173",
       "isBackground": true,
       "options": {
         "cwd": "${workspaceFolder}"
@@ -82,13 +82,13 @@
       "id": "digizineSimpleBrowserIndex",
       "type": "command",
       "command": "simpleBrowser.show",
-      "args": ["http://127.0.0.1:5174/index.html"]
+      "args": ["http://127.0.0.1:5173/index.html"]
     },
     {
       "id": "digizineSimpleBrowserMobile",
       "type": "command",
       "command": "simpleBrowser.show",
-      "args": ["http://127.0.0.1:5174/preview-mobile.html"]
+      "args": ["http://127.0.0.1:5173/preview-mobile.html"]
     }
   ]
 }

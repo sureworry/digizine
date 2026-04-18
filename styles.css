@@ -32,6 +32,42 @@ body {
   font-family: 'Makiba', serif;
 }
 
+@media (min-width: 769px) {
+  body.homepage-lamp-active:has(.shelf-container) {
+    background: #1C1D21;
+  }
+
+  body.homepage-lamp-active:has(.shelf-container) .header > .title,
+  body.homepage-lamp-active:has(.shelf-container) .header > .title > a,
+  body.homepage-lamp-active:has(.shelf-container) .header > .title > a:hover {
+    color: #FFFFFF;
+  }
+}
+
+body.issue-page.homepage-lamp-active,
+body.issue-page--scroll.homepage-lamp-active {
+  background: #1C1D21;
+}
+
+body.issue-page.homepage-lamp-active .header > .title,
+body.issue-page--scroll.homepage-lamp-active .header > .title,
+body.issue-page.homepage-lamp-active .header > .title > a,
+body.issue-page--scroll.homepage-lamp-active .header > .title > a,
+body.issue-page.homepage-lamp-active .header > .title > a:hover,
+body.issue-page--scroll.homepage-lamp-active .header > .title > a:hover {
+  color: #FFFFFF;
+}
+
+body.issue-page.homepage-lamp-active .issue-back,
+body.issue-page--scroll.homepage-lamp-active .issue-back {
+  color: #ffffff;
+}
+
+body.issue-page.homepage-lamp-active .issue-back:hover,
+body.issue-page--scroll.homepage-lamp-active .issue-back:hover {
+  color: #ffffff;
+}
+
 body.issue-page--scroll {
   overflow-x: visible;
 }
@@ -294,7 +330,7 @@ body:has(.shelf-container) {
 
 /*
  * Homepage web (desktop): scale the 2319×789 artboard to fit available viewport height — same svh-based
- * idea as L2 --zine-page-height. Mobile layout (≤768px) uses its own spec + rules; no scale there.
+ * idea as L2 --zine-page-height. Mobile layout (≤768px) uses its own spec + rules; card size can be tuned there.
  */
 @media (min-width: 769px) {
   .wrapper:has(.shelf-container) {
@@ -396,6 +432,7 @@ body:has(.shelf-container) {
 .content-frame .zine-cover.layout-draggable {
   cursor: grab;
 }
+
 
 /*
  * Foreground props (books → … → lamp → coffee): base z-index 200+ (above shelves at 50).
@@ -505,6 +542,35 @@ body:has(.shelf-container) {
 @media (max-width: 768px) {
   header {
     padding-bottom: 10px;
+  }
+
+  css.zine-strip-wrap {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+  }
+
+  .zine-strip__scroller {
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+
+  .issue-scroll-main {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+  }
+
+  .issue-zine-frame--scroll {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+  }
+
+  .zine-strip-wrap img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
   }
 
   .title-stack {
@@ -752,9 +818,12 @@ body:has(.shelf-container) {
   .issue-page--scroll {
     --zine-stack-gap: -167.692px;
     --issue-l2-chrome-y-mobile: 300px;
-    --zine-page-height: min(
-      218px,
-      max(160px, calc(100svh - var(--issue-l2-chrome-y-mobile)))
+    --zine-page-height: calc(
+      1.2 *
+        min(
+          218px,
+          max(160px, calc(100svh - var(--issue-l2-chrome-y-mobile)))
+        )
     );
     --zine-open-padding-x: 84px;
   }
@@ -779,6 +848,8 @@ body:has(.shelf-container) {
     margin-top: 0;
     min-height: 0;
     gap: 0;
+    max-width: 100vw;
+    overflow-x: hidden;
     transform: translateY(170px);
   }
 
@@ -789,6 +860,14 @@ body:has(.shelf-container) {
   .issue-page--scroll .zine-inner .zine-strip.zine-strip--open {
     width: 100%;
     max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+  }
+
+  .issue-page--scroll .zine-inner .zine-strip.zine-strip--closed {
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
@@ -1012,7 +1091,7 @@ body:has(.shelf-container) {
   align-items: stretch;
   flex: 1 1 auto;
   width: 100%;
-  max-width: none;
+  max-width: 100vw;
   min-width: 0;
   min-height: 0;
   overflow-x: visible;
@@ -1311,3 +1390,4 @@ body:has(.shelf-container) {
   cursor: default;
   opacity: 0.4;
 }
+
