@@ -4,7 +4,7 @@
  * Synced from Figma: scroll frame 0:4 — file Ewrh7rVmEkyWoZ2hMRlI3P (get_metadata, node 0:4).
  * Inner nodes: self 0:11, observations Frame 2 0:72, collection Group 17 0:82, idea 0:8,
  * romanticise 0:21, books 0:47, shelf 0:60, about 0:5, shelf-2 0:89, confessions 0:95, cat 0:103, plant 0:121.
- * Not on 0:4 (unchanged in Figma): lamp + coffee positions hand-tuned. Draggable: lamp + snake-plant / chinese-cat / books / coffee.
+ * Not on 0:4 (unchanged in Figma): lamp + coffee positions hand-tuned. Draggable: lamp + snake-plant / books / coffee.
  * Web: lamp `y` is ignored — CSS/JS pin the lamp to the bottom of #content-frame (see applyLampBox).
  * Draggable ids in HOMEPAGE_DRAGGABLE_IDS; z-index on drag brings item to front.
  */
@@ -61,12 +61,6 @@ var HOMEPAGE_LAYOUT_SPEC = {
     width: 260,
     height: 460
   },
-  'chinese-cat': {
-    x: 123,
-    y: 412,
-    width: 90,
-    height: 110
-  },
   lamp: {
     x: 1937,
     y: 189,
@@ -100,7 +94,6 @@ var HOMEPAGE_DRAGGABLE_IDS = [
   'idea-marinade',
   'cat',
   'romanticise',
-  'chinese-cat',
   'snake-plant',
   'lamp',
   'about'

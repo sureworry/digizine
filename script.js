@@ -16,7 +16,6 @@ var HOMEPAGE_ASSETS = [
 var dragOffsets = {
   plant: { dx: 0, dy: 0 },
   'snake-plant': { dx: 0, dy: 0 },
-  'chinese-cat': { dx: 0, dy: 0 },
   books: { dx: 0, dy: 0 },
   coffee: { dx: 0, dy: 0 },
   cat: { dx: 0, dy: 0 },
@@ -525,11 +524,10 @@ window.digizineExportLayout = function () {
   var Z_ISSUE_DRAG_MAX = 49;
   var zIssueDrag = 15;
 
-  /** plant, cat, chinese-cat, snake-plant, lamp, books — above shelf; drag uses 500+. */
+  /** plant, cat, snake-plant, lamp, books — above shelf; drag uses 500+. */
   var FOREGROUND_DECORATION_IDS = {
     plant: true,
     cat: true,
-    'chinese-cat': true,
     'snake-plant': true,
     lamp: true,
     books: true,

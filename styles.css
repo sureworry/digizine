@@ -455,10 +455,6 @@ body:has(.shelf-container) {
   z-index: 203;
 }
 
-.content-frame .decoration-chinese-cat {
-  z-index: 204;
-}
-
 .content-frame .decoration-lamp {
   z-index: 205;
 }
@@ -769,10 +765,6 @@ body:has(.shelf-container) {
   }
 
   .wrapper:has(.shelf-container) .layout-item[data-layout-id='lamp'] {
-    display: none !important;
-  }
-
-  .wrapper:has(.shelf-container) .layout-item[data-layout-id='chinese-cat'] {
     display: none !important;
   }
 
