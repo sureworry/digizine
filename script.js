@@ -1,3 +1,38 @@
+/** Short “pop” on draggable grab — Web Audio only (Mixkit CDN returns AccessDenied in browsers). */
+var draggablePopAudioCtx = null;
+
+function playDraggablePopSound() {
+  try {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!draggablePopAudioCtx) draggablePopAudioCtx = new Ctx();
+    var ctx = draggablePopAudioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    var t0 = ctx.currentTime;
+    var dur = 0.09;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, t0);
+    osc.frequency.exponentialRampToValueAtTime(220, t0 + dur);
+    gain.gain.setValueAtTime(0, t0);
+    gain.gain.linearRampToValueAtTime(0.35, t0 + 0.006);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  } catch (err) {}
+}
+
+var lampSound = new Audio(
+  'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'
+);
+lampSound.volume = 0.4;
+
+var meowSound = new Audio('assets/sounds/cat-meow.wav');
+meowSound.volume = 0.4;
+
 // Homepage: zine slugs (data-zine id → issue folder slug)
 var HOMEPAGE_ASSETS = [
   { id: 'self-perception', type: 'zine', slug: 'self-perception' },
@@ -599,6 +634,10 @@ window.digizineExportLayout = function () {
     var box = layoutSpec && layoutSpec[id];
     if (!box) return;
 
+    if (t.dataset.layoutId !== 'lamp') {
+      playDraggablePopSound();
+    }
+
     var pt = clientPoint(e);
     var o = dragOffsets[id] || { dx: 0, dy: 0 };
 
@@ -838,6 +877,8 @@ document.addEventListener('visibilitychange', function () {
       homepageSuppressLampToggleClick = false;
       return;
     }
+    lampSound.currentTime = 0;
+    lampSound.play();
     var nextDark = !document.body.classList.contains('homepage-lamp-active');
     setHomepageThemeClass(nextDark);
     persistHomepageTheme(nextDark);
@@ -852,6 +893,20 @@ document.addEventListener('visibilitychange', function () {
     }, 80);
   });
   applyLampThemeAssets();
+})();
+
+(function initHomepageCatMeowHover() {
+  if (!contentFrame) return;
+  var cat = contentFrame.querySelector('[data-layout-id="cat"]');
+  if (!cat) return;
+  var lastMeowAt = 0;
+  cat.addEventListener('mouseenter', function () {
+    var now = Date.now();
+    if (now - lastMeowAt < 2000) return;
+    lastMeowAt = now;
+    meowSound.currentTime = 0;
+    meowSound.play();
+  });
 })();
 
 /* Apply persisted theme on every page (homepage + L2) after lamp asset hooks exist. */
