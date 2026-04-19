@@ -738,18 +738,18 @@ if (contentFrame) {
   });
 }
 
+/** Tab session only — new tab/window defaults to light; same-tab navigation keeps the choice. */
 var DIGIZINE_THEME_STORAGE_KEY = 'digizineTheme';
 
 function persistHomepageTheme(isDark) {
   try {
-    var v = isDark ? 'dark' : 'light';
-    localStorage.setItem(DIGIZINE_THEME_STORAGE_KEY, v);
+    sessionStorage.setItem(DIGIZINE_THEME_STORAGE_KEY, isDark ? 'dark' : 'light');
   } catch (e) {}
 }
 
 function readPersistedHomepageThemeIsDark() {
   try {
-    return localStorage.getItem(DIGIZINE_THEME_STORAGE_KEY) === 'dark';
+    return sessionStorage.getItem(DIGIZINE_THEME_STORAGE_KEY) === 'dark';
   } catch (e) {
     return false;
   }
@@ -765,13 +765,6 @@ function digizineApplyHomepageThemeFromStorage() {
     window.__digizineApplyHomepageLampThemeAssets();
   }
 }
-
-window.addEventListener('storage', function (e) {
-  if (!e || e.key !== DIGIZINE_THEME_STORAGE_KEY) {
-    return;
-  }
-  digizineApplyHomepageThemeFromStorage();
-});
 
 window.addEventListener('pageshow', function (e) {
   if (e && e.persisted) {
@@ -853,7 +846,13 @@ document.addEventListener('visibilitychange', function () {
     applyLampThemeAssets();
   });
 
-  window.addEventListener('resize', applyLampThemeAssets);
+  var themeResizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(themeResizeTimer);
+    themeResizeTimer = setTimeout(function () {
+      digizineApplyHomepageThemeFromStorage();
+    }, 80);
+  });
   applyLampThemeAssets();
 })();
 
