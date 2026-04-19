@@ -32,6 +32,43 @@ body {
   font-family: 'Makiba', serif;
 }
 
+/* Web (≥769px): lamp theme — dark shelf + header; L2 matches when class is set from storage. */
+@media (min-width: 769px) {
+  body.homepage-lamp-active:has(.shelf-container) {
+    background: #1c1d21;
+  }
+
+  body.homepage-lamp-active:has(.shelf-container) .header > .title,
+  body.homepage-lamp-active:has(.shelf-container) .header > .title > a,
+  body.homepage-lamp-active:has(.shelf-container) .header > .title > a:hover {
+    color: #ffffff;
+  }
+
+  body.issue-page.homepage-lamp-active,
+  body.issue-page--scroll.homepage-lamp-active {
+    background: #1c1d21;
+  }
+
+  body.issue-page.homepage-lamp-active .header > .title,
+  body.issue-page--scroll.homepage-lamp-active .header > .title,
+  body.issue-page.homepage-lamp-active .header > .title > a,
+  body.issue-page--scroll.homepage-lamp-active .header > .title > a,
+  body.issue-page.homepage-lamp-active .header > .title > a:hover,
+  body.issue-page--scroll.homepage-lamp-active .header > .title > a:hover {
+    color: #ffffff;
+  }
+
+  body.issue-page.homepage-lamp-active .issue-back,
+  body.issue-page--scroll.homepage-lamp-active .issue-back {
+    color: #ffffff;
+  }
+
+  body.issue-page.homepage-lamp-active .issue-back:hover,
+  body.issue-page--scroll.homepage-lamp-active .issue-back:hover {
+    color: #ffffff;
+  }
+}
+
 body.issue-page--scroll {
   overflow-x: visible;
 }
