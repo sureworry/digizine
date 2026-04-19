@@ -68,8 +68,8 @@ var HOMEPAGE_LAYOUT_SPEC = {
     height: 350
   },
   books: {
-    x: 92,
-    y: 510,
+    x: 137,
+    y: 512,
     width: 151.69436645507812,
     height: 179.47854614257812
   },

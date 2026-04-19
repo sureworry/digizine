@@ -435,11 +435,11 @@ body:has(.shelf-container) {
 }
 
 /*
- * Foreground props (books → … → lamp → coffee): base z-index 200+ (above shelves at 50).
+ * Foreground props: books default stack on top; cat → … → lamp → coffee below books at rest.
  * Dragging a prop raises it via script (500+). Issues stay below shelf (CSS & drag max 49).
  */
 .content-frame .decoration-books {
-  z-index: 200;
+  z-index: 210;
 }
 
 .content-frame .decoration-cat {
