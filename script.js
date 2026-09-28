@@ -66,6 +66,15 @@ var draggableOriginalYByElement = new Map();
 var homepageSuppressZineClick = false;
 /** After dragging lamp, skip the synthetic click so theme does not toggle on release. */
 var homepageSuppressLampToggleClick = false;
+/** After dragging any object, skip the synthetic click so it is not also counted as a tap. */
+var homepageSuppressObjectClick = false;
+
+function trackShelfEvent(eventName, params) {
+  if (typeof window.gtag !== 'function') return;
+  try {
+    window.gtag('event', eventName, params || {});
+  } catch (err) {}
+}
 
 /**
  * When false (default), reload always uses HOMEPAGE_LAYOUT_SPEC — defaults stay locked in source.
@@ -722,6 +731,10 @@ window.digizineExportLayout = function () {
       };
       applyLayoutFromSpec();
     }
+    if (active.didDrag && active.id) {
+      homepageSuppressObjectClick = true;
+      trackShelfEvent('move_object', { object_id: active.id });
+    }
     if (active.didDrag && active.isZine) {
       homepageSuppressZineClick = true;
     }
@@ -750,6 +763,19 @@ window.digizineExportLayout = function () {
 /* Zine navigation: click on cover (skipped right after a drag on draggable covers) */
 var contentFrame = document.getElementById('content-frame');
 if (contentFrame) {
+  contentFrame.addEventListener('click', function (e) {
+    if (homepageSuppressObjectClick) {
+      homepageSuppressObjectClick = false;
+      return;
+    }
+    var el = e.target.closest('[data-layout-id]');
+    if (!el || !contentFrame.contains(el)) return;
+    var id = el.getAttribute('data-layout-id');
+    if (!id || id.indexOf('shelf') === 0) return;
+    if (el.matches('.zine-cover[data-zine]') || id === 'lamp') return;
+    trackShelfEvent('select_object', { object_id: id });
+  });
+
   contentFrame.querySelectorAll('.zine-cover[data-zine]').forEach(function (el) {
     el.addEventListener('click', function (e) {
       if (homepageSuppressZineClick) {
@@ -764,6 +790,10 @@ if (contentFrame) {
         slug = asset && asset.slug ? asset.slug : '';
       }
       if (slug) {
+        trackShelfEvent('open_zine', {
+          zine_name: el.getAttribute('data-zine') || slug,
+          zine_slug: slug
+        });
         if (typeof setPendingIssueSlug === 'function') {
           setPendingIssueSlug(slug);
         }
@@ -872,7 +902,10 @@ document.addEventListener('visibilitychange', function () {
   window.__digizineApplyHomepageLampThemeAssets = applyLampThemeAssets;
 
   lamp.addEventListener('click', function () {
-    if (isMobileHomepageLayout()) return;
+    if (isMobileHomepageLayout()) {
+      trackShelfEvent('select_object', { object_id: 'lamp' });
+      return;
+    }
     if (homepageSuppressLampToggleClick) {
       homepageSuppressLampToggleClick = false;
       return;
@@ -883,6 +916,7 @@ document.addEventListener('visibilitychange', function () {
     setHomepageThemeClass(nextDark);
     persistHomepageTheme(nextDark);
     applyLampThemeAssets();
+    trackShelfEvent('toggle_lamp', { theme: nextDark ? 'dark' : 'light' });
   });
 
   var themeResizeTimer;
@@ -906,6 +940,7 @@ document.addEventListener('visibilitychange', function () {
     lastMeowAt = now;
     meowSound.currentTime = 0;
     meowSound.play();
+    trackShelfEvent('pet_cat', { object_id: 'cat' });
   });
 })();
 
