@@ -1309,7 +1309,7 @@ body:has(.shelf-container) {
 }
 
 /* —— Homepage → L2 cover zoom (script.js zoomCoverIntoIssue) —— */
-/* Zoom is a uniform transform on the layer (JS); dissolve timings are set on the two images from JS */
+/* Zoom is a uniform transform on the layer (JS); the shelf → issue cover swap timing is set from JS */
 .cover-zoom {
   position: fixed;
   z-index: 3000;
@@ -1330,12 +1330,6 @@ body:has(.shelf-container) {
 .cover-zoom__art {
   position: absolute;
   object-fit: contain;
-  opacity: 0;
-}
-
-/* Plain paper in the issue cover's colour, for covers whose shelf layout differs (colour + box from JS) */
-.cover-zoom__paper {
-  position: absolute;
   opacity: 0;
 }
 
