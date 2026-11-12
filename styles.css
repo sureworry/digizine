@@ -1381,6 +1381,45 @@ body:has(.shelf-container) {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.03) 100%);
 }
 
+/*
+ * Creases at each join, kept when the sheet lies flat. Folds alternate like a concertina: valleys (first page's
+ * right edge, then every other join) sink into soft shadow, ridges between them catch a little light.
+ */
+.issue-page--scroll .zine-strip--accordion {
+  --crease-valley-left: linear-gradient(90deg, rgba(0, 0, 0, 0.09) 0%, rgba(0, 0, 0, 0) 100%);
+  --crease-valley-right: linear-gradient(270deg, rgba(0, 0, 0, 0.09) 0%, rgba(0, 0, 0, 0) 100%);
+  --crease-ridge-left: linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 100%);
+  --crease-ridge-right: linear-gradient(270deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    var(--crease-left, none) left top / 12px 100% no-repeat,
+    var(--crease-right, none) right top / 12px 100% no-repeat;
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__page:nth-child(odd) {
+  --crease-left: var(--crease-ridge-left);
+  --crease-right: var(--crease-valley-right);
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__page:nth-child(even) {
+  --crease-left: var(--crease-valley-left);
+  --crease-right: var(--crease-ridge-right);
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__page:first-child {
+  --crease-left: none;
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__page:last-child {
+  --crease-right: none;
+}
+
 .issue-viewer-row {
   display: flex;
   align-items: center;
