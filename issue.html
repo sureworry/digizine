@@ -37,6 +37,25 @@
       <div class="issue-zine-frame issue-zine-frame--scroll zine-inner">
         <div class="zine-strip-wrap">
           <div id="zine-strip-root" class="zine-strip-root"></div>
+          <script>
+            /* Hold the homepage-zoomed cover on screen from the first paint until the reader has drawn its own. */
+            (function () {
+              try {
+                var d = JSON.parse(sessionStorage.getItem('digizineCoverZoom') || 'null');
+                if (!d || !d.rect || !d.src || Date.now() - d.at > 5000) return;
+                var img = document.createElement('img');
+                img.className = 'cover-zoom-hold';
+                img.alt = '';
+                img.decoding = 'sync';
+                img.src = d.src;
+                img.style.left = d.rect.left + 'px';
+                img.style.top = d.rect.top + 'px';
+                img.style.width = d.rect.width + 'px';
+                img.style.height = d.rect.height + 'px';
+                document.body.appendChild(img);
+              } catch (e) {}
+            })();
+          </script>
         </div>
       </div>
       <a href="index.html" class="issue-back">back to shelf</a>

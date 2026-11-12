@@ -477,17 +477,27 @@
           stripEl.classList.remove('zine-strip--accordion-pending');
           return;
         }
-        ZA.setStage(stripEl, ZA.STAGE_CLOSED);
-        playCoverIntro(stripEl, options.introRect, function () {
-          setTimeout(function () {
-            if (ZA.getStage(stripEl) === ZA.STAGE_CLOSED) {
-              ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion });
-            }
-          }, options.introRect ? 120 : 450);
+        var coverImg = stripEl.querySelector('.zine-strip__page img');
+        var decoded =
+          coverImg && typeof coverImg.decode === 'function'
+            ? coverImg.decode().catch(function () {})
+            : Promise.resolve();
+        decoded.then(function () {
+          ZA.setStage(stripEl, ZA.STAGE_CLOSED);
+          playCoverIntro(stripEl, options.introRect, function () {
+            setTimeout(function () {
+              if (ZA.getStage(stripEl) === ZA.STAGE_CLOSED) {
+                ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion });
+              }
+            }, options.introRect ? 120 : 450);
+          });
+          /* Arriving from the homepage zoom: show the cover at once so the hand-off doesn't blink. */
+          if (options.introRect) stripEl.style.transition = 'none';
+          stripEl.classList.remove('zine-strip--accordion-pending');
+          /* Swap out the stand-in cover (issue.html) in the same frame the reader's cover first paints. */
+          var hold = document.querySelector('.cover-zoom-hold');
+          if (hold) hold.parentNode.removeChild(hold);
         });
-        /* Arriving from the homepage zoom: show the cover at once so the hand-off doesn't blink. */
-        if (options.introRect) stripEl.style.transition = 'none';
-        stripEl.classList.remove('zine-strip--accordion-pending');
       });
     } else if (typeof scheduleZineStackLayout === 'function') {
       scheduleZineStackLayout(stripEl);

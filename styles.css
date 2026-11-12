@@ -1329,22 +1329,35 @@ body:has(.shelf-container) {
   object-fit: contain;
 }
 
-/* Taped shelf cover gives way to the plain issue cover the reader opens on */
+/* Taped shelf cover gives way to the plain issue cover the reader opens on (JS adds is-art-ready once decoded) */
 .cover-zoom__art {
   opacity: 0;
-  transition: opacity 0.32s ease 0.22s;
+  transition: opacity 0.32s ease;
 }
 
-.cover-zoom.is-zoomed .cover-zoom__art {
+.cover-zoom.is-art-ready .cover-zoom__art {
   opacity: 1;
 }
 
 .cover-zoom__shelf {
-  transition: opacity 0.32s ease 0.26s;
+  transition: opacity 0.32s ease 0.04s;
 }
 
-.cover-zoom.is-zoomed .cover-zoom__shelf {
+.cover-zoom.is-art-ready .cover-zoom__shelf {
   opacity: 0;
+}
+
+/* L2 stand-in for the zoomed cover until the reader's own cover is decoded and drawn (issue.html) */
+.cover-zoom-hold {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  object-fit: contain;
+  filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
+}
+
+.cover-zoom__art {
+  filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
 }
 
 body.homepage-cover-zooming .shelf-container {

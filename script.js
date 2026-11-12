@@ -765,7 +765,43 @@ window.digizineExportLayout = function () {
  * taped shelf art to the issue cover), then hands its final rect to issue.js so the reader continues from it.
  */
 var COVER_ZOOM_MS = 620;
+/** Earliest point in the zoom where the taped shelf cover may start giving way to the issue cover. */
+var COVER_ZOOM_CROSSFADE_AT_MS = 220;
+var COVER_ZOOM_CROSSFADE_MS = 320;
+/** Don't hold the shelf forever on a slow connection — navigate even if the issue cover hasn't arrived. */
+var COVER_ZOOM_MAX_WAIT_MS = 2500;
 var homepageCoverZoomActive = false;
+var homepageIssueCoverImages = {};
+
+/* Fetch every issue cover in the background so the zoom can crossfade into it without waiting. */
+function preloadIssueCovers() {
+  if (typeof getIssueBySlug !== 'function') return;
+  HOMEPAGE_ASSETS.forEach(function (a) {
+    var issue = a.slug ? getIssueBySlug(a.slug) : null;
+    if (!issue || !issue.cover || homepageIssueCoverImages[issue.cover]) return;
+    var img = new Image();
+    img.decoding = 'async';
+    img.src = issue.cover;
+    homepageIssueCoverImages[issue.cover] = img;
+  });
+}
+
+if (document.getElementById('content-frame')) {
+  if (document.readyState === 'complete') preloadIssueCovers();
+  else window.addEventListener('load', preloadIssueCovers);
+}
+
+function whenCoverArtReady(img) {
+  if (img.complete && img.naturalWidth) {
+    return typeof img.decode === 'function' ? img.decode().catch(function () {}) : Promise.resolve();
+  }
+  return new Promise(function (resolve) {
+    img.addEventListener('load', function () {
+      (typeof img.decode === 'function' ? img.decode().catch(function () {}) : Promise.resolve()).then(resolve);
+    });
+    img.addEventListener('error', resolve);
+  });
+}
 
 /** Mirrors --zine-page-height on .issue-page--scroll (desktop / mobile) in styles.css. */
 function estimateIssueCoverHeight() {
@@ -788,8 +824,12 @@ function zoomCoverIntoIssue(el, slug, href) {
   homepageCoverZoomActive = true;
 
   var from = el.getBoundingClientRect();
-  var art = new Image();
-  art.src = coverSrc;
+  var art = homepageIssueCoverImages[coverSrc];
+  if (!art) {
+    art = new Image();
+    art.src = coverSrc;
+    homepageIssueCoverImages[coverSrc] = art;
+  }
   var aspect =
     art.naturalWidth && art.naturalHeight ? art.naturalWidth / art.naturalHeight : from.width / from.height;
   var th = estimateIssueCoverHeight();
@@ -831,15 +871,40 @@ function zoomCoverIntoIssue(el, slug, href) {
     layer.style.height = target.height + 'px';
   });
 
-  setTimeout(function () {
+  /*
+   * Crossfade only once the issue cover is decoded (never fade the shelf cover into a half-loaded image),
+   * and navigate once both the zoom and the crossfade have finished.
+   */
+  var startedAt = Date.now();
+  var navigated = false;
+  function go(withArt) {
+    if (navigated) return;
+    navigated = true;
     try {
-      sessionStorage.setItem(
-        'digizineCoverZoom',
-        JSON.stringify({ slug: slug, at: Date.now(), rect: target })
-      );
+      if (withArt) {
+        sessionStorage.setItem(
+          'digizineCoverZoom',
+          JSON.stringify({ slug: slug, at: Date.now(), rect: target, src: coverSrc })
+        );
+      }
     } catch (e) {}
     window.location.assign(href);
-  }, COVER_ZOOM_MS);
+  }
+  whenCoverArtReady(art).then(function () {
+    if (navigated) return;
+    var wait = Math.max(0, COVER_ZOOM_CROSSFADE_AT_MS - (Date.now() - startedAt));
+    setTimeout(function () {
+      if (navigated) return;
+      layer.classList.add('is-art-ready');
+      var remaining = Math.max(COVER_ZOOM_CROSSFADE_MS, COVER_ZOOM_MS - (Date.now() - startedAt));
+      setTimeout(function () {
+        go(true);
+      }, remaining);
+    }, wait);
+  });
+  setTimeout(function () {
+    go(false);
+  }, COVER_ZOOM_MAX_WAIT_MS);
 
   homepageCoverZoomActive = { layer: layer, el: el };
 }
