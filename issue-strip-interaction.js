@@ -74,6 +74,7 @@
 
     var accordion =
       options.foldStyle === 'accordion' && typeof global.ZineAccordion !== 'undefined';
+    var landOnCover = accordion && !!options.landOnCover;
 
     var pointerActive = false;
     var pointerDragged = false;
@@ -100,20 +101,63 @@
       return strip.querySelectorAll('.zine-strip__page');
     }
 
-    /* Accordion: same row layout folded/flat, so only per-page transforms animate (no FLIP). */
+    /*
+     * Accordion: same row layout folded/flat, so only per-page transforms animate (no FLIP).
+     * landOnCover: closing folds all the way back onto the cover; tapping the cover fans it out to the zigzag.
+     */
     function runAccordionTransition(strip, opening) {
+      var ZA = global.ZineAccordion;
       if (opening) {
+        if (landOnCover && ZA.getStage(strip) < ZA.STAGE_ZIGZAG - 0.001) {
+          ZA.animateTo(strip, ZA.STAGE_ZIGZAG, { animate: !reduceMotion });
+          return;
+        }
         strip.classList.remove('zine-strip--closed');
         strip.classList.add('zine-strip--open');
-        global.ZineAccordion.unfold(strip, !reduceMotion);
+        ZA.animateTo(strip, ZA.STAGE_FLAT, { animate: !reduceMotion });
       } else {
         var spreadOffset = -strip.scrollLeft;
         strip.classList.remove('zine-strip--open');
         strip.classList.add('zine-strip--closed');
         strip.scrollLeft = 0;
-        global.ZineAccordion.fold(strip, !reduceMotion, spreadOffset);
+        ZA.animateTo(strip, landOnCover ? ZA.STAGE_CLOSED : ZA.STAGE_ZIGZAG, {
+          animate: !reduceMotion,
+          offsetX: spreadOffset
+        });
       }
       syncChrome(strip, opening);
+    }
+
+    /* Start the closed cover where the previous page left it (e.g. the homepage zoom), then glide into place. */
+    function playCoverIntro(strip, rect, done) {
+      var outer = strip.closest('.zine-strip-outer') || strip;
+      var cover = getPages(strip)[0];
+      if (!rect || !cover || reduceMotion) {
+        done();
+        return;
+      }
+      var c = cover.getBoundingClientRect();
+      var o = outer.getBoundingClientRect();
+      if (!c.height) {
+        done();
+        return;
+      }
+      var s = rect.height / c.height;
+      var dx = rect.left + rect.width / 2 - (c.left + c.width / 2);
+      var dy = rect.top + rect.height / 2 - (c.top + c.height / 2);
+      outer.style.transformOrigin = c.left + c.width / 2 - o.left + 'px ' + (c.top + c.height / 2 - o.top) + 'px';
+      outer.style.transition = 'none';
+      outer.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + s + ')';
+      void outer.offsetWidth;
+      requestAnimationFrame(function () {
+        outer.style.transition = 'transform 0.45s cubic-bezier(0.22, 1, 0.32, 1)';
+        outer.style.transform = '';
+        setTimeout(function () {
+          outer.style.transition = '';
+          outer.style.transformOrigin = '';
+          done();
+        }, 470);
+      });
     }
 
     function runFlipTransition(strip, opening) {
@@ -427,7 +471,22 @@
     if (accordion) {
       stripEl.classList.add('zine-strip--accordion', 'zine-strip--accordion-pending');
       global.ZineAccordion.whenImagesReady(stripEl, function () {
-        global.ZineAccordion.fold(stripEl, false);
+        var ZA = global.ZineAccordion;
+        if (!landOnCover) {
+          ZA.setStage(stripEl, ZA.STAGE_ZIGZAG);
+          stripEl.classList.remove('zine-strip--accordion-pending');
+          return;
+        }
+        ZA.setStage(stripEl, ZA.STAGE_CLOSED);
+        playCoverIntro(stripEl, options.introRect, function () {
+          setTimeout(function () {
+            if (ZA.getStage(stripEl) === ZA.STAGE_CLOSED) {
+              ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion });
+            }
+          }, options.introRect ? 120 : 450);
+        });
+        /* Arriving from the homepage zoom: show the cover at once so the hand-off doesn't blink. */
+        if (options.introRect) stripEl.style.transition = 'none';
         stripEl.classList.remove('zine-strip--accordion-pending');
       });
     } else if (typeof scheduleZineStackLayout === 'function') {
@@ -444,7 +503,8 @@
       resizeTimer = setTimeout(function () {
         if (accordion) {
           if (stripEl.classList.contains('zine-strip--closed')) {
-            global.ZineAccordion.fold(stripEl, false);
+            var ZA = global.ZineAccordion;
+            ZA.setStage(stripEl, Math.min(ZA.getStage(stripEl), ZA.STAGE_ZIGZAG));
           }
           return;
         }

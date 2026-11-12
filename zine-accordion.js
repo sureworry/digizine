@@ -1,41 +1,45 @@
-// L2 accordion fold: pages keep the open-row layout and are turned in 3D (alternating) so the strip reads as one
-// long folded sheet. Every animation frame re-chains the pages edge to edge, so folds never detach or overlap.
+// L2 accordion: one continuous folded sheet built as a real 3D concertina (shared camera on the scroller).
+// Stage drives everything: 0 = closed on the cover (other pages stacked behind it), 1 = zigzag, 2 = flat open row.
+// Every frame re-chains the pages edge to edge, so folds never detach or overlap.
 (function (global) {
-  /** Perspective depth as a multiple of page height — keeps the fold depth similar on desktop and mobile. */
-  var PERSPECTIVE_PER_PAGE_HEIGHT = 4;
+  /**
+   * Camera distance as a multiple of page height — keeps the fold depth similar on desktop and mobile.
+   * Far enough back that the outermost pages (the cover, on the left) aren't foreshortened into slivers.
+   */
+  var PERSPECTIVE_PER_PAGE_HEIGHT = 8;
   var MIN_FOLD_DEG = 55;
   var MAX_FOLD_DEG = 72;
   /** Folded zine width as a share of the visible strip width. */
   var FIT_RATIO = 0.86;
-  var FOLD_MS = 900;
-  /** Neighbours overlap by this much so antialiased fold edges never show a hairline of background. */
+  /** Closed stack: each page folds back to just short of flat against the previous one. */
+  var CLOSED_GAP_DEG = 4;
+  /** Duration per stage step (closed→zigzag, zigzag→flat). */
+  var STAGE_MS = 950;
+  /** Neighbours overlap by this much while folded so antialiased fold edges never show a hairline. */
   var SEAM_OVERLAP_PX = 0.75;
+
+  var STAGE_CLOSED = 0;
+  var STAGE_ZIGZAG = 1;
+  var STAGE_FLAT = 2;
 
   function getPages(strip) {
     return strip.querySelectorAll('.zine-strip__page');
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
   }
 
   function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
-  /* translateX sits outside perspective() so every page is seen head-on, then slid into place. */
-  function toTransform(x, perspective, deg, scale) {
-    return (
-      'translateX(' + x + 'px) perspective(' + perspective + 'px) rotateY(' + deg + 'deg) scale(' + scale + ')'
-    );
-  }
-
-  /** Untransformed layout (offsetLeft/offsetWidth ignore transforms) plus the fully folded angle and scale. */
+  /** Untransformed layout (computed widths keep sub-pixel precision) plus the zigzag angle and scale. */
   function measure(strip) {
     var scroller = strip.querySelector('.zine-strip__scroller');
     var pages = getPages(strip);
     if (!scroller || !pages.length) return null;
 
-    /*
-     * Used widths from computed style keep sub-pixel precision (offsetWidth rounds, which shows up as uneven
-     * seams on mobile). Pages sit contiguously in the row, so lefts accumulate from the scroller's inner edge.
-     */
     var scStyle = getComputedStyle(scroller);
     var widths = [];
     var lefts = [];
@@ -51,81 +55,133 @@
 
     var visibleW = strip.clientWidth || window.innerWidth;
     var target = visibleW * FIT_RATIO;
-    var deg = (Math.acos(Math.min(1, target / total)) * 180) / Math.PI;
-    deg = Math.max(MIN_FOLD_DEG, Math.min(MAX_FOLD_DEG, deg));
-    var foldScale = Math.min(1, target / (total * Math.cos((deg * Math.PI) / 180)));
+    var psi = (Math.acos(Math.min(1, target / total)) * 180) / Math.PI;
+    psi = Math.max(MIN_FOLD_DEG, Math.min(MAX_FOLD_DEG, psi));
+    var zigScale = Math.min(1, target / (total * Math.cos((psi * Math.PI) / 180)));
 
-    var geo = {
+    var stripRect = strip.getBoundingClientRect();
+    var scrollerRect = scroller.getBoundingClientRect();
+    var pageH = pages[0].offsetHeight;
+    return {
+      strip: strip,
+      scroller: scroller,
       pages: pages,
       widths: widths,
       lefts: lefts,
-      scrollerLeft: scroller.getBoundingClientRect().left,
-      perspective: Math.max(600, pages[0].offsetHeight * PERSPECTIVE_PER_PAGE_HEIGHT),
-      foldDeg: deg,
-      foldScale: foldScale
+      scrollerLeft: scrollerRect.left,
+      stripCenter: stripRect.left + strip.clientLeft + visibleW / 2,
+      pageH: pageH,
+      perspective: Math.max(600, pageH * PERSPECTIVE_PER_PAGE_HEIGHT),
+      psi: psi,
+      zigScale: zigScale
     };
-    var stripLeft = strip.getBoundingClientRect().left + strip.clientLeft;
-    geo.foldedAnchor = stripLeft + (visibleW - chainWidth(geo, deg, foldScale)) / 2;
-    return geo;
   }
 
-  /** Projected left/right half-widths: the half turned toward the viewer is wider than the receding half. */
-  function extentsAt(geo, index, deg, scale) {
-    var rad = (deg * Math.PI) / 180;
-    var half = (geo.widths[index] * scale) / 2;
-    var depth = half * Math.sin(rad);
-    var base = half * Math.cos(rad) * geo.perspective;
-    var near = base / (geo.perspective - depth);
-    var far = base / (geo.perspective + depth);
-    /* Even pages turn +deg (right edge recedes), odd pages −deg (left edge recedes). */
-    return index % 2 === 0 ? { left: near, right: far } : { left: far, right: near };
-  }
-
-  /** Seam overlap shrinks to 0 as the sheet flattens so the last frame matches the open row exactly. */
-  function seamOverlap(geo, deg) {
-    return geo.foldDeg > 0 ? SEAM_OVERLAP_PX * (deg / geo.foldDeg) : 0;
-  }
-
-  function chainWidth(geo, deg, scale) {
-    var overlap = seamOverlap(geo, deg);
-    var w = 0;
-    for (var i = 0; i < geo.widths.length; i++) {
-      var e = extentsAt(geo, i, deg, scale);
-      w += e.left + e.right - (i > 0 ? overlap : 0);
+  /*
+   * Pose per stage, as a real concertina: every fold opens by the same half-angle `a` around a pull axis at
+   * heading `R` (headings are in the x–z plane, z toward the viewer). Even pages head R + a, odd pages R − a.
+   * Closed: the axis points away from the viewer, so the cover faces front and the rest stack behind it.
+   * Opening turns the axis sideways while the folds open, so the sheet stays compact instead of sweeping flat.
+   */
+  function poseAt(geo, stage) {
+    var closedHalf = 90 - CLOSED_GAP_DEG / 2;
+    var closed = { R: -closedHalf, a: closedHalf, scale: 1 };
+    var zig = { R: 0, a: geo.psi, scale: geo.zigScale };
+    var flat = { R: 0, a: 0, scale: 1 };
+    if (stage <= STAGE_ZIGZAG) {
+      var t = Math.max(0, stage);
+      return {
+        R: lerp(closed.R, zig.R, t),
+        a: lerp(closed.a, zig.a, t),
+        scale: lerp(closed.scale, zig.scale, t),
+        from: 'closed',
+        to: 'zig',
+        t: t,
+        /* Closed cover lies flat, so fold shading ramps in as the pages swing out */
+        fold: t,
+        crease: 0
+      };
     }
-    return w;
+    var u = Math.min(1, stage - STAGE_ZIGZAG);
+    return {
+      R: lerp(zig.R, flat.R, u),
+      a: lerp(zig.a, flat.a, u),
+      scale: lerp(zig.scale, flat.scale, u),
+      from: 'zig',
+      to: 'flat',
+      t: u,
+      fold: 1 - u,
+      crease: u
+    };
   }
 
-  /** Lay the pages edge to edge from anchorLeft (viewport x) at a given fold angle and scale. */
-  function chainTransforms(geo, deg, scale, anchorLeft) {
-    var overlap = seamOverlap(geo, deg);
+  /** Chain pages from the origin; returns centres, headings, and x/z extents for anchoring. */
+  function chain(geo, pose) {
+    var overlap = SEAM_OVERLAP_PX * pose.fold;
+    var px = 0;
+    var pz = 0;
     var out = [];
-    var cursor = anchorLeft;
+    var minX = 0;
+    var maxX = 0;
+    var minZ = 0;
+    var maxZ = 0;
     for (var i = 0; i < geo.widths.length; i++) {
-      var e = extentsAt(geo, i, deg, scale);
-      if (i > 0) cursor -= overlap;
-      var center = cursor + e.left;
-      var flatCenter = geo.scrollerLeft + geo.lefts[i] + geo.widths[i] / 2;
-      out.push(toTransform(center - flatCenter, geo.perspective, i % 2 === 0 ? deg : -deg, scale));
-      cursor += e.left + e.right;
+      var deg = i % 2 === 0 ? pose.R + pose.a : pose.R - pose.a;
+      var rad = (deg * Math.PI) / 180;
+      var w = geo.widths[i] * pose.scale;
+      var dx = Math.cos(rad);
+      var dz = Math.sin(rad);
+      var ex = px + dx * w;
+      var ez = pz + dz * w;
+      out.push({ cx: px + (dx * w) / 2, cz: pz + (dz * w) / 2, deg: deg, facing: dx });
+      minX = Math.min(minX, ex);
+      maxX = Math.max(maxX, ex);
+      minZ = Math.min(minZ, ez);
+      maxZ = Math.max(maxZ, ez);
+      px += dx * (w - (i < geo.widths.length - 1 ? overlap : 0));
+      pz += dz * (w - (i < geo.widths.length - 1 ? overlap : 0));
     }
-    return out;
+    return { pages: out, minX: minX, maxX: maxX, minZ: minZ, maxZ: maxZ };
   }
 
-  /** flatness: 0 = fully folded and centred, 1 = flat in the open row (shifted by offsetX). */
-  function render(strip, geo, flatness, offsetX) {
-    var fold = 1 - flatness;
-    var deg = geo.foldDeg * fold;
-    var scale = geo.foldScale + (1 - geo.foldScale) * flatness;
-    var flatAnchor = geo.scrollerLeft + geo.lefts[0] + offsetX;
-    var anchor = geo.foldedAnchor + (flatAnchor - geo.foldedAnchor) * flatness;
-    var transforms = chainTransforms(geo, deg, scale, anchor);
+  /** Where each pose wants the chain: closed centres the cover, zigzag centres the sheet, flat sits in the row. */
+  function anchorFor(geo, which, c, offsetX) {
+    if (which === 'closed') return { x: geo.stripCenter - c.pages[0].cx, z: -c.pages[0].cz };
+    if (which === 'zig') return { x: geo.stripCenter - (c.minX + c.maxX) / 2, z: -(c.minZ + c.maxZ) / 2 };
+    return { x: geo.scrollerLeft + geo.lefts[0] + offsetX, z: 0 };
+  }
+
+  function render(strip, geo, stage, offsetX) {
+    var pose = poseAt(geo, stage);
+    var c = chain(geo, pose);
+    var a = anchorFor(geo, pose.from, c, offsetX);
+    var b = anchorFor(geo, pose.to, c, offsetX);
+    var shiftX = lerp(a.x, b.x, pose.t);
+    var shiftZ = lerp(a.z, b.z, pose.t);
+
+    geo.scroller.style.perspective = geo.perspective + 'px';
+    geo.scroller.style.perspectiveOrigin = geo.stripCenter - geo.scrollerLeft + 'px ' + geo.pageH / 2 + 'px';
+
     for (var i = 0; i < geo.pages.length; i++) {
-      geo.pages[i].style.transition = 'none';
-      geo.pages[i].style.transform = transforms[i];
+      var p = c.pages[i];
+      var flatCenter = geo.scrollerLeft + geo.lefts[i] + geo.widths[i] / 2;
+      var el = geo.pages[i];
+      el.style.transition = 'none';
+      el.style.transform =
+        'translate3d(' +
+        (p.cx + shiftX - flatCenter) +
+        'px, 0, ' +
+        (p.cz + shiftZ) +
+        'px) rotateY(' +
+        -p.deg +
+        'deg) scale(' +
+        pose.scale +
+        ')';
+      el.classList.toggle('zine-strip__page--back', p.facing < 0);
     }
-    strip.style.setProperty('--zine-fold-amount', String(fold));
-    strip._zineFlatness = flatness;
+    strip.style.setProperty('--zine-fold-amount', String(pose.fold));
+    strip.style.setProperty('--zine-crease-amount', String(pose.crease));
+    strip._zineStage = stage;
   }
 
   function clearFlat(strip) {
@@ -133,9 +189,11 @@
     for (var i = 0; i < pages.length; i++) {
       pages[i].style.transition = '';
       pages[i].style.transform = '';
+      pages[i].classList.remove('zine-strip__page--back');
     }
     strip.style.setProperty('--zine-fold-amount', '0');
-    strip._zineFlatness = 1;
+    strip.style.setProperty('--zine-crease-amount', '1');
+    strip._zineStage = STAGE_FLAT;
   }
 
   function stopAnimation(strip) {
@@ -145,20 +203,30 @@
     }
   }
 
-  function animateTo(strip, toFlatness, animate, offsetX) {
+  function getStage(strip) {
+    return typeof strip._zineStage === 'number' ? strip._zineStage : STAGE_ZIGZAG;
+  }
+
+  /**
+   * Animate to a stage. offsetX: where the flat row sits relative to scrollLeft 0 (−scrollLeft before closing),
+   * so folding starts from the spread on screen instead of jumping back to the first page.
+   */
+  function animateTo(strip, toStage, opts) {
+    opts = opts || {};
     stopAnimation(strip);
     var geo = measure(strip);
     if (!geo) return;
-    offsetX = offsetX || 0;
-    var from = typeof strip._zineFlatness === 'number' ? strip._zineFlatness : 1 - toFlatness;
+    var offsetX = opts.offsetX || 0;
+    var from = typeof opts.from === 'number' ? opts.from : getStage(strip);
 
     function settle() {
-      if (toFlatness === 1) clearFlat(strip);
-      else render(strip, geo, 0, offsetX);
+      if (toStage === STAGE_FLAT) clearFlat(strip);
+      else render(strip, geo, toStage, offsetX);
+      if (opts.onDone) opts.onDone();
     }
 
-    var duration = FOLD_MS * Math.abs(toFlatness - from);
-    if (!animate || duration < 16) {
+    var duration = STAGE_MS * Math.abs(toStage - from);
+    if (opts.animate === false || duration < 16) {
       settle();
       return;
     }
@@ -167,7 +235,7 @@
     function frame(now) {
       if (start === null) start = now;
       var t = Math.min(1, (now - start) / duration);
-      render(strip, geo, from + (toFlatness - from) * easeInOutCubic(t), offsetX);
+      render(strip, geo, lerp(from, toStage, easeInOutCubic(t)), offsetX);
       if (t < 1) {
         strip._zineAccordionRaf = requestAnimationFrame(frame);
       } else {
@@ -179,16 +247,8 @@
     strip._zineAccordionRaf = requestAnimationFrame(frame);
   }
 
-  /**
-   * offsetX: where the flat row currently sits relative to scrollLeft 0 (−scrollLeft before closing), so the
-   * fold starts from the spread on screen instead of jumping back to the first page.
-   */
-  function fold(strip, animate, offsetX) {
-    animateTo(strip, 0, animate, offsetX);
-  }
-
-  function unfold(strip, animate) {
-    animateTo(strip, 1, animate, 0);
+  function setStage(strip, stage) {
+    animateTo(strip, stage, { animate: false, from: stage });
   }
 
   /** Run cb once every page image has loaded (or failed) so widths are real. */
@@ -214,8 +274,12 @@
   }
 
   global.ZineAccordion = {
-    fold: fold,
-    unfold: unfold,
+    STAGE_CLOSED: STAGE_CLOSED,
+    STAGE_ZIGZAG: STAGE_ZIGZAG,
+    STAGE_FLAT: STAGE_FLAT,
+    animateTo: animateTo,
+    setStage: setStage,
+    getStage: getStage,
     whenImagesReady: whenImagesReady
   };
 })(typeof window !== 'undefined' ? window : this);

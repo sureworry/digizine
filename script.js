@@ -760,6 +760,100 @@ window.digizineExportLayout = function () {
   document.addEventListener('touchcancel', onPointerUp);
 })();
 
+/*
+ * Homepage → L2: the tapped cover zooms toward where the reader shows its closed cover (crossfading from the
+ * taped shelf art to the issue cover), then hands its final rect to issue.js so the reader continues from it.
+ */
+var COVER_ZOOM_MS = 620;
+var homepageCoverZoomActive = false;
+
+/** Mirrors --zine-page-height on .issue-page--scroll (desktop / mobile) in styles.css. */
+function estimateIssueCoverHeight() {
+  var h = window.innerHeight;
+  if (isMobileHomepageLayout()) return Math.min(218, Math.max(160, h - 300));
+  return Math.min(520, Math.max(220, h - 520));
+}
+
+function zoomCoverIntoIssue(el, slug, href) {
+  if (homepageCoverZoomActive) return;
+  var reduceMotion =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var issue = typeof getIssueBySlug === 'function' ? getIssueBySlug(slug) : null;
+  var coverSrc = issue && issue.cover;
+  if (reduceMotion || !coverSrc) {
+    window.location.assign(href);
+    return;
+  }
+  homepageCoverZoomActive = true;
+
+  var from = el.getBoundingClientRect();
+  var art = new Image();
+  art.src = coverSrc;
+  var aspect =
+    art.naturalWidth && art.naturalHeight ? art.naturalWidth / art.naturalHeight : from.width / from.height;
+  var th = estimateIssueCoverHeight();
+  var tw = th * aspect;
+  var target = {
+    left: window.innerWidth / 2 - tw / 2,
+    top: window.innerHeight * (isMobileHomepageLayout() ? 0.45 : 0.505) - th / 2,
+    width: tw,
+    height: th
+  };
+
+  var layer = document.createElement('div');
+  layer.className = 'cover-zoom';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.style.left = from.left + 'px';
+  layer.style.top = from.top + 'px';
+  layer.style.width = from.width + 'px';
+  layer.style.height = from.height + 'px';
+  var shelfImg = document.createElement('img');
+  shelfImg.className = 'cover-zoom__shelf';
+  shelfImg.src = el.currentSrc || el.src;
+  shelfImg.alt = '';
+  var artImg = document.createElement('img');
+  artImg.className = 'cover-zoom__art';
+  artImg.src = coverSrc;
+  artImg.alt = '';
+  layer.appendChild(shelfImg);
+  layer.appendChild(artImg);
+  document.body.appendChild(layer);
+  el.style.visibility = 'hidden';
+  document.body.classList.add('homepage-cover-zooming');
+
+  void layer.offsetWidth;
+  requestAnimationFrame(function () {
+    layer.classList.add('is-zoomed');
+    layer.style.left = target.left + 'px';
+    layer.style.top = target.top + 'px';
+    layer.style.width = target.width + 'px';
+    layer.style.height = target.height + 'px';
+  });
+
+  setTimeout(function () {
+    try {
+      sessionStorage.setItem(
+        'digizineCoverZoom',
+        JSON.stringify({ slug: slug, at: Date.now(), rect: target })
+      );
+    } catch (e) {}
+    window.location.assign(href);
+  }, COVER_ZOOM_MS);
+
+  homepageCoverZoomActive = { layer: layer, el: el };
+}
+
+/* Back button (bfcache): put the shelf back the way it was. */
+window.addEventListener('pageshow', function (e) {
+  if (!e || !e.persisted || !homepageCoverZoomActive) return;
+  var state = homepageCoverZoomActive;
+  if (state.layer && state.layer.parentNode) state.layer.parentNode.removeChild(state.layer);
+  if (state.el) state.el.style.visibility = '';
+  document.body.classList.remove('homepage-cover-zooming');
+  homepageCoverZoomActive = false;
+});
+
 /* Zine navigation: click on cover (skipped right after a drag on draggable covers) */
 var contentFrame = document.getElementById('content-frame');
 if (contentFrame) {
@@ -799,7 +893,7 @@ if (contentFrame) {
         }
         var u = new URL('issue.html', window.location.href);
         u.searchParams.set('slug', slug);
-        window.location.assign(u.href);
+        zoomCoverIntoIssue(el, slug, u.href);
       }
     });
   });

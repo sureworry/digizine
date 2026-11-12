@@ -1308,6 +1308,50 @@ body:has(.shelf-container) {
   object-fit: contain;
 }
 
+/* —— Homepage → L2 cover zoom (script.js zoomCoverIntoIssue) —— */
+.cover-zoom {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  transition:
+    left 0.62s cubic-bezier(0.22, 1, 0.32, 1),
+    top 0.62s cubic-bezier(0.22, 1, 0.32, 1),
+    width 0.62s cubic-bezier(0.22, 1, 0.32, 1),
+    height 0.62s cubic-bezier(0.22, 1, 0.32, 1);
+}
+
+.cover-zoom__shelf,
+.cover-zoom__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Taped shelf cover gives way to the plain issue cover the reader opens on */
+.cover-zoom__art {
+  opacity: 0;
+  transition: opacity 0.32s ease 0.22s;
+}
+
+.cover-zoom.is-zoomed .cover-zoom__art {
+  opacity: 1;
+}
+
+.cover-zoom__shelf {
+  transition: opacity 0.32s ease 0.26s;
+}
+
+.cover-zoom.is-zoomed .cover-zoom__shelf {
+  opacity: 0;
+}
+
+body.homepage-cover-zooming .shelf-container {
+  opacity: 0;
+  transition: opacity 0.36s ease;
+}
+
 /*
  * —— Accordion fold (zine-accordion.js) ——
  * Folded state reuses the open row so unfolding only animates per-page transforms.
@@ -1338,12 +1382,29 @@ body:has(.shelf-container) {
   gap: 0;
 }
 
-.issue-page--scroll .zine-strip--accordion .zine-strip__scroller {
+/* Fade lives on the strip, not the scroller: opacity on the scroller would flatten its 3D page stack. */
+.issue-page--scroll .zine-strip.zine-strip--accordion {
   transition: opacity 0.4s ease;
 }
 
-.issue-page--scroll .zine-strip--accordion-pending .zine-strip__scroller {
+.issue-page--scroll .zine-strip.zine-strip--accordion-pending {
   opacity: 0;
+}
+
+/* Shared camera for the concertina (perspective + origin are set per frame by zine-accordion.js) */
+.issue-page--scroll .zine-strip--accordion .zine-strip__scroller {
+  transform-style: preserve-3d;
+}
+
+/* A page turned away shows the blank back of the sheet */
+.issue-page--scroll .zine-strip--accordion .zine-strip__page.zine-strip__page--back {
+  background: #f4f2ef;
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__page--back .zine-strip__image,
+.issue-page--scroll .zine-strip--accordion .zine-strip__page--back::before,
+.issue-page--scroll .zine-strip--accordion .zine-strip__page--back::after {
+  visibility: hidden;
 }
 
 .issue-page--scroll .zine-strip--accordion.zine-strip--closed .zine-strip__page {
@@ -1363,7 +1424,8 @@ body:has(.shelf-container) {
   will-change: transform;
 }
 
-.issue-page--scroll .zine-strip--accordion .zine-strip__scroller {
+/* Shadow on the outer wrapper: a filter on the scroller would flatten the 3D stack */
+.issue-page--scroll .zine-strip-outer:has(.zine-strip--accordion) {
   filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
 }
 
@@ -1374,17 +1436,18 @@ body:has(.shelf-container) {
   inset: 0;
   pointer-events: none;
   opacity: var(--zine-fold-amount, 0);
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%);
+  /* Even pages (cover first) recede on the left, odd pages on the right */
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.02) 100%);
 }
 
 .issue-page--scroll .zine-strip--accordion .zine-strip__page:nth-child(even)::after {
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.03) 100%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.03) 0%, rgba(0, 0, 0, 0.14) 100%);
 }
 
 /*
- * Flattened-fold creases, shown only once the sheet is open (fade in as --zine-fold-amount reaches 0).
- * Folds alternate like a concertina: valleys are a faint groove, ridges a hairline of light with a whisper
- * of shadow falling off it.
+ * Flattened-fold creases, shown only once the sheet is open (--zine-crease-amount ramps 0→1 from zigzag to flat).
+ * Folds alternate like a concertina: ridges (cover's right edge, then every other join) are a hairline of light
+ * with a whisper of shadow falling off it; valleys between them are a faint groove.
  */
 .issue-page--scroll .zine-strip--accordion {
   --crease-valley-left: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
@@ -1398,20 +1461,20 @@ body:has(.shelf-container) {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: calc(1 - var(--zine-fold-amount, 0));
+  opacity: var(--zine-crease-amount, 0);
   background:
     var(--crease-left, none) left top / 3px 100% no-repeat,
     var(--crease-right, none) right top / 3px 100% no-repeat;
 }
 
 .issue-page--scroll .zine-strip--accordion .zine-strip__page:nth-child(odd) {
-  --crease-left: var(--crease-ridge-left);
-  --crease-right: var(--crease-valley-right);
+  --crease-left: var(--crease-valley-left);
+  --crease-right: var(--crease-ridge-right);
 }
 
 .issue-page--scroll .zine-strip--accordion .zine-strip__page:nth-child(even) {
-  --crease-left: var(--crease-valley-left);
-  --crease-right: var(--crease-ridge-right);
+  --crease-left: var(--crease-ridge-left);
+  --crease-right: var(--crease-valley-right);
 }
 
 .issue-page--scroll .zine-strip--accordion .zine-strip__page:first-child {
