@@ -1352,35 +1352,33 @@ body:has(.shelf-container) {
   top: auto;
   flex: 0 0 auto;
   z-index: auto;
+}
+
+/* One continuous sheet: no per-page border, background, or shadow (those read as seams between folds) */
+.issue-page--scroll .zine-strip--accordion .zine-strip__page {
+  border: 0;
   border-radius: 0;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: transparent;
+  filter: none;
   will-change: transform;
 }
 
-/* Fold shading: darker toward each page's receding edge; fades out as the zine lies flat */
+.issue-page--scroll .zine-strip--accordion .zine-strip__scroller {
+  filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
+}
+
+/* Fold shading: darker toward each page's receding edge; --zine-fold-amount (JS) fades it as the sheet flattens */
 .issue-page--scroll .zine-strip--accordion .zine-strip__page::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.32, 1);
+  opacity: var(--zine-fold-amount, 0);
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%);
 }
 
 .issue-page--scroll .zine-strip--accordion .zine-strip__page:nth-child(even)::after {
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.03) 100%);
-}
-
-.issue-page--scroll .zine-strip--accordion.zine-strip--closed .zine-strip__page::after {
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .issue-page--scroll .zine-strip--accordion .zine-strip__page::after {
-    transition: none;
-  }
 }
 
 .issue-viewer-row {

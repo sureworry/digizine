@@ -107,11 +107,11 @@
         strip.classList.add('zine-strip--open');
         global.ZineAccordion.unfold(strip, !reduceMotion);
       } else {
-        global.ZineAccordion.holdFlat(strip, -strip.scrollLeft);
+        var spreadOffset = -strip.scrollLeft;
         strip.classList.remove('zine-strip--open');
         strip.classList.add('zine-strip--closed');
         strip.scrollLeft = 0;
-        global.ZineAccordion.fold(strip, !reduceMotion);
+        global.ZineAccordion.fold(strip, !reduceMotion, spreadOffset);
       }
       syncChrome(strip, opening);
     }
