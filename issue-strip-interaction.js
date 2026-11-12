@@ -130,7 +130,6 @@
 
     /*
      * Start the closed cover where the previous page left it (e.g. the homepage zoom), then glide into place.
-     * This is the whole hold on the cover before the zigzag fold starts.
      */
     var COVER_INTRO_MS = 100;
     function playCoverIntro(strip, rect, done) {
@@ -488,13 +487,18 @@
             : Promise.resolve();
         decoded.then(function () {
           ZA.setStage(stripEl, ZA.STAGE_CLOSED);
-          playCoverIntro(stripEl, options.introRect, function () {
-            setTimeout(function () {
-              if (ZA.getStage(stripEl) === ZA.STAGE_CLOSED) {
-                ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion });
-              }
-            }, options.introRect ? 0 : 450);
-          });
+          function foldOut(easing) {
+            if (ZA.getStage(stripEl) === ZA.STAGE_CLOSED) {
+              ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion, easing: easing });
+            }
+          }
+          if (options.introRect) {
+            /* No hold after the homepage zoom: fold out while the cover glides into place (measured first, unshifted). */
+            foldOut('out');
+            playCoverIntro(stripEl, options.introRect, function () {});
+          } else {
+            setTimeout(foldOut, 450);
+          }
           /* Arriving from the homepage zoom: show the cover at once so the hand-off doesn't blink. */
           if (options.introRect) stripEl.style.transition = 'none';
           stripEl.classList.remove('zine-strip--accordion-pending');

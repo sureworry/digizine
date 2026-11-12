@@ -34,6 +34,10 @@
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   }
 
+  function easeOutSine(t) {
+    return Math.sin((t * Math.PI) / 2);
+  }
+
   /** Untransformed layout (computed widths keep sub-pixel precision) plus the zigzag angle and scale. */
   function measure(strip) {
     var scroller = strip.querySelector('.zine-strip__scroller');
@@ -210,6 +214,7 @@
   /**
    * Animate to a stage. offsetX: where the flat row sits relative to scrollLeft 0 (−scrollLeft before closing),
    * so folding starts from the spread on screen instead of jumping back to the first page.
+   * easing: 'out' starts moving at once (e.g. carrying on from the homepage zoom) instead of easing in.
    */
   function animateTo(strip, toStage, opts) {
     opts = opts || {};
@@ -231,11 +236,12 @@
       return;
     }
 
+    var ease = opts.easing === 'out' ? easeOutSine : easeInOutCubic;
     var start = null;
     function frame(now) {
       if (start === null) start = now;
       var t = Math.min(1, (now - start) / duration);
-      render(strip, geo, lerp(from, toStage, easeInOutCubic(t)), offsetX);
+      render(strip, geo, lerp(from, toStage, ease(t)), offsetX);
       if (t < 1) {
         strip._zineAccordionRaf = requestAnimationFrame(frame);
       } else {
