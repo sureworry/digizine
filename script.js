@@ -762,10 +762,15 @@ window.digizineExportLayout = function () {
 
 /*
  * Homepage → L2: on tap the taped shelf cover swaps in place for the reader's issue cover, then only the
- * issue cover zooms toward where the reader shows its closed cover. Its final rect goes to issue.js so the
- * reader continues from it.
+ * issue cover zooms toward where the reader shows its closed cover. The reader page starts loading just
+ * before the zoom lands; the cover's rect at that moment goes to issue.html, which finishes the last bit of
+ * the zoom so there's no pause while the page loads.
  */
-var COVER_ZOOM_MS = 680;
+var COVER_ZOOM_MS = 600;
+/** Quick start and a short settle (a long ease-out tail reads as a pause before the reader takes over). */
+var COVER_ZOOM_EASE = 'cubic-bezier(0.3, 0.5, 0.45, 1)';
+/** Start loading the reader this long before the zoom lands; issue.html plays the rest. */
+var COVER_ZOOM_NAV_LEAD_MS = 150;
 /** In-place crossfade from the shelf cover to the issue cover; the zoom starts as it finishes. */
 var COVER_ZOOM_SWAP_MS = 120;
 var COVER_ZOOM_SWAP_LEAD_MS = 80;
@@ -818,6 +823,23 @@ if (document.getElementById('content-frame')) {
   else window.addEventListener('load', preloadIssueCovers);
 }
 
+/* On tap: warm the reader page and every zine page image, so it can fold out the moment it lands. */
+function prefetchIssue(issue, href) {
+  try {
+    var link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = href;
+    document.head.appendChild(link);
+  } catch (e) {}
+  (issue.pages || []).forEach(function (page) {
+    if (!page || !page.src || homepageIssueCoverImages[page.src]) return;
+    var img = new Image();
+    img.decoding = 'async';
+    img.src = page.src;
+    homepageIssueCoverImages[page.src] = img;
+  });
+}
+
 function whenCoverArtReady(img) {
   if (img.complete && img.naturalWidth) {
     return typeof img.decode === 'function' ? img.decode().catch(function () {}) : Promise.resolve();
@@ -859,15 +881,16 @@ function zoomCoverIntoIssue(el, slug, href) {
     art.src = coverSrc;
     homepageIssueCoverImages[coverSrc] = art;
   }
+  prefetchIssue(issue, href);
   var navigated = false;
-  function go(target) {
+  function go(target, from, remainingMs) {
     if (navigated) return;
     navigated = true;
     try {
       if (target) {
         sessionStorage.setItem(
           'digizineCoverZoom',
-          JSON.stringify({ slug: slug, at: Date.now(), rect: target, src: coverSrc })
+          JSON.stringify({ slug: slug, at: Date.now(), rect: target, from: from, remaining: remainingMs, src: coverSrc })
         );
       }
     } catch (e) {}
@@ -940,11 +963,16 @@ function zoomCoverIntoIssue(el, slug, href) {
       artImg.style.opacity = '1';
       shelfImg.style.opacity = '0';
       layer.style.transition =
-        'transform ' + COVER_ZOOM_MS + 'ms cubic-bezier(0.22, 1, 0.32, 1) ' + COVER_ZOOM_SWAP_LEAD_MS + 'ms';
+        'transform ' + COVER_ZOOM_MS + 'ms ' + COVER_ZOOM_EASE + ' ' + COVER_ZOOM_SWAP_LEAD_MS + 'ms';
       layer.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + s + ')';
       setTimeout(function () {
-        go(target);
-      }, COVER_ZOOM_SWAP_LEAD_MS + COVER_ZOOM_MS + 20);
+        /* Where the cover is on screen right now: the art contained in its (mid-zoom) box */
+        var r = artImg.getBoundingClientRect();
+        var h = Math.min(r.height, r.width / aspect);
+        var w = h * aspect;
+        var from = { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h };
+        go(target, from, COVER_ZOOM_NAV_LEAD_MS);
+      }, COVER_ZOOM_SWAP_LEAD_MS + COVER_ZOOM_MS - COVER_ZOOM_NAV_LEAD_MS);
     });
   });
 }

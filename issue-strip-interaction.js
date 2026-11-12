@@ -493,9 +493,12 @@
             }
           }
           if (options.introRect) {
+            /* Take over from the stand-in wherever it is now (it may still be finishing the homepage zoom). */
+            var holdEl = document.querySelector('.cover-zoom-hold');
+            var from = holdEl ? holdEl.getBoundingClientRect() : options.introRect;
             /* No hold after the homepage zoom: fold out while the cover glides into place (measured first, unshifted). */
             foldOut('out');
-            playCoverIntro(stripEl, options.introRect, function () {});
+            playCoverIntro(stripEl, from.width ? from : options.introRect, function () {});
           } else {
             setTimeout(foldOut, 450);
           }
