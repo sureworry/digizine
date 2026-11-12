@@ -103,7 +103,8 @@
         t: t,
         /* Closed cover lies flat, so fold shading ramps in as the pages swing out */
         fold: t,
-        crease: 0
+        crease: 0,
+        fitCover: 1 - t
       };
     }
     var u = Math.min(1, stage - STAGE_ZIGZAG);
@@ -115,8 +116,18 @@
       to: 'flat',
       t: u,
       fold: 1 - u,
-      crease: u
+      crease: u,
+      fitCover: 0
     };
+  }
+
+  /*
+   * Pages wider than the cover would stick out past it while the zine is closed, so they start scaled down
+   * to the cover's width and grow back to full size as the pages swing out.
+   */
+  function pageScale(geo, pose, i) {
+    var fit = Math.min(1, geo.widths[0] / geo.widths[i]);
+    return pose.scale * (1 - pose.fitCover * (1 - fit));
   }
 
   /** Chain pages from the origin; returns centres, headings, and x/z extents for anchoring. */
@@ -132,7 +143,7 @@
     for (var i = 0; i < geo.widths.length; i++) {
       var deg = i % 2 === 0 ? pose.R + pose.a : pose.R - pose.a;
       var rad = (deg * Math.PI) / 180;
-      var w = geo.widths[i] * pose.scale;
+      var w = geo.widths[i] * pageScale(geo, pose, i);
       var dx = Math.cos(rad);
       var dz = Math.sin(rad);
       var ex = px + dx * w;
@@ -179,7 +190,7 @@
         'px) rotateY(' +
         -p.deg +
         'deg) scale(' +
-        pose.scale +
+        pageScale(geo, pose, i) +
         ')';
       el.classList.toggle('zine-strip__page--back', p.facing < 0);
     }
