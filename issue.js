@@ -25,7 +25,7 @@
       typeof createZineStrip !== 'undefined' &&
       typeof setupZineStripInteraction !== 'undefined'
     ) {
-      var strip = createZineStrip({ issue: issue });
+      var strip = createZineStrip({ issue: issue, hideCover: true });
       container.appendChild(strip.element);
       var nPages = strip.element.querySelectorAll('.zine-strip__page').length;
       container.style.setProperty('--stack-total-n', String(Math.max(1, nPages)));

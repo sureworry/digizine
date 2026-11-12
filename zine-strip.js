@@ -204,7 +204,7 @@
       scroller.appendChild(pageEl);
     }
 
-    if (issue.cover) {
+    if (issue.cover && !options.hideCover) {
       addImagePage(issue.cover, issue.title || 'cover');
     }
 
