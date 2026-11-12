@@ -128,7 +128,11 @@
       syncChrome(strip, opening);
     }
 
-    /* Start the closed cover where the previous page left it (e.g. the homepage zoom), then glide into place. */
+    /*
+     * Start the closed cover where the previous page left it (e.g. the homepage zoom), then glide into place.
+     * This is the whole hold on the cover before the zigzag fold starts.
+     */
+    var COVER_INTRO_MS = 100;
     function playCoverIntro(strip, rect, done) {
       var outer = strip.closest('.zine-strip-outer') || strip;
       var cover = getPages(strip)[0];
@@ -150,13 +154,13 @@
       outer.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + s + ')';
       void outer.offsetWidth;
       requestAnimationFrame(function () {
-        outer.style.transition = 'transform 0.45s cubic-bezier(0.22, 1, 0.32, 1)';
+        outer.style.transition = 'transform ' + COVER_INTRO_MS + 'ms cubic-bezier(0.22, 1, 0.32, 1)';
         outer.style.transform = '';
         setTimeout(function () {
           outer.style.transition = '';
           outer.style.transformOrigin = '';
           done();
-        }, 470);
+        }, COVER_INTRO_MS);
       });
     }
 
@@ -489,7 +493,7 @@
               if (ZA.getStage(stripEl) === ZA.STAGE_CLOSED) {
                 ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion });
               }
-            }, options.introRect ? 120 : 450);
+            }, options.introRect ? 0 : 450);
           });
           /* Arriving from the homepage zoom: show the cover at once so the hand-off doesn't blink. */
           if (options.introRect) stripEl.style.transition = 'none';
