@@ -72,6 +72,9 @@
       typeof window.matchMedia !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    var accordion =
+      options.foldStyle === 'accordion' && typeof global.ZineAccordion !== 'undefined';
+
     var pointerActive = false;
     var pointerDragged = false;
     var scrollNudged = false;
@@ -97,7 +100,27 @@
       return strip.querySelectorAll('.zine-strip__page');
     }
 
+    /* Accordion: same row layout folded/flat, so only per-page transforms animate (no FLIP). */
+    function runAccordionTransition(strip, opening) {
+      if (opening) {
+        strip.classList.remove('zine-strip--closed');
+        strip.classList.add('zine-strip--open');
+        global.ZineAccordion.unfold(strip, !reduceMotion);
+      } else {
+        global.ZineAccordion.holdFlat(strip, -strip.scrollLeft);
+        strip.classList.remove('zine-strip--open');
+        strip.classList.add('zine-strip--closed');
+        strip.scrollLeft = 0;
+        global.ZineAccordion.fold(strip, !reduceMotion);
+      }
+      syncChrome(strip, opening);
+    }
+
     function runFlipTransition(strip, opening) {
+      if (accordion) {
+        runAccordionTransition(strip, opening);
+        return;
+      }
       var pages = getPages(strip);
       if (pages.length === 0) return;
 
@@ -401,7 +424,13 @@
       { passive: true }
     );
 
-    if (typeof scheduleZineStackLayout === 'function') {
+    if (accordion) {
+      stripEl.classList.add('zine-strip--accordion', 'zine-strip--accordion-pending');
+      global.ZineAccordion.whenImagesReady(stripEl, function () {
+        global.ZineAccordion.fold(stripEl, false);
+        stripEl.classList.remove('zine-strip--accordion-pending');
+      });
+    } else if (typeof scheduleZineStackLayout === 'function') {
       scheduleZineStackLayout(stripEl);
     }
 
@@ -413,6 +442,12 @@
     function onViewportResize() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
+        if (accordion) {
+          if (stripEl.classList.contains('zine-strip--closed')) {
+            global.ZineAccordion.fold(stripEl, false);
+          }
+          return;
+        }
         if (typeof layoutZineStackPositions === 'function') {
           layoutZineStackPositions(stripEl);
         }

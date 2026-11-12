@@ -1308,6 +1308,81 @@ body:has(.shelf-container) {
   object-fit: contain;
 }
 
+/*
+ * —— Accordion fold (zine-accordion.js) ——
+ * Folded state reuses the open row so unfolding only animates per-page transforms.
+ * Padding/margin pair gives perspective-enlarged fold edges room above the strip without moving it.
+ */
+.issue-page--scroll .zine-strip.zine-strip--accordion {
+  padding-top: 40px;
+  margin-top: -40px;
+}
+
+.issue-page--scroll .zine-strip.zine-strip--accordion.zine-strip--closed {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+.issue-page--scroll .zine-strip--accordion.zine-strip--closed .zine-strip__scroller {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  position: static;
+  width: max-content;
+  min-width: 0;
+  padding-left: var(--zine-open-padding-x);
+  padding-right: var(--zine-open-padding-x);
+  box-sizing: border-box;
+  gap: 0;
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__scroller {
+  transition: opacity 0.4s ease;
+}
+
+.issue-page--scroll .zine-strip--accordion-pending .zine-strip__scroller {
+  opacity: 0;
+}
+
+.issue-page--scroll .zine-strip--accordion.zine-strip--closed .zine-strip__page {
+  position: relative;
+  left: auto;
+  top: auto;
+  flex: 0 0 auto;
+  z-index: auto;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  will-change: transform;
+}
+
+/* Fold shading: darker toward each page's receding edge; fades out as the zine lies flat */
+.issue-page--scroll .zine-strip--accordion .zine-strip__page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.32, 1);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+.issue-page--scroll .zine-strip--accordion .zine-strip__page:nth-child(even)::after {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.14) 0%, rgba(0, 0, 0, 0.03) 100%);
+}
+
+.issue-page--scroll .zine-strip--accordion.zine-strip--closed .zine-strip__page::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issue-page--scroll .zine-strip--accordion .zine-strip__page::after {
+    transition: none;
+  }
+}
+
 .issue-viewer-row {
   display: flex;
   align-items: center;

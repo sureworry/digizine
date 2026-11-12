@@ -29,7 +29,7 @@
       container.appendChild(strip.element);
       var nPages = strip.element.querySelectorAll('.zine-strip__page').length;
       container.style.setProperty('--stack-total-n', String(Math.max(1, nPages)));
-      setupZineStripInteraction(strip.element, { issue: issue });
+      setupZineStripInteraction(strip.element, { issue: issue, foldStyle: 'accordion' });
     }
   } else {
     document.title = (slug || 'issue') + ' — shar\'s zine shelf';
