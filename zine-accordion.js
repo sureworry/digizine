@@ -38,6 +38,10 @@
     return Math.sin((t * Math.PI) / 2);
   }
 
+  function easeInSine(t) {
+    return 1 - Math.cos((t * Math.PI) / 2);
+  }
+
   /** Untransformed layout (computed widths keep sub-pixel precision) plus the zigzag angle and scale. */
   function measure(strip) {
     var scroller = strip.querySelector('.zine-strip__scroller');
@@ -225,8 +229,8 @@
   /**
    * Animate to a stage. offsetX: where the flat row sits relative to scrollLeft 0 (−scrollLeft before closing),
    * so folding starts from the spread on screen instead of jumping back to the first page.
-   * easing: 'out' starts moving at once (e.g. carrying on from the homepage zoom) instead of easing in.
-   * speed: multiplier on the default pace (2 = twice as fast).
+   * easing: 'out' starts moving at once (e.g. carrying on from the homepage zoom) instead of easing in;
+   * 'in' arrives still moving (e.g. handing straight on to the zoom home) instead of settling.
    */
   function animateTo(strip, toStage, opts) {
     opts = opts || {};
@@ -242,13 +246,13 @@
       if (opts.onDone) opts.onDone();
     }
 
-    var duration = (STAGE_MS / (opts.speed || 1)) * Math.abs(toStage - from);
+    var duration = STAGE_MS * Math.abs(toStage - from);
     if (opts.animate === false || duration < 16) {
       settle();
       return;
     }
 
-    var ease = opts.easing === 'out' ? easeOutSine : easeInOutCubic;
+    var ease = opts.easing === 'out' ? easeOutSine : opts.easing === 'in' ? easeInSine : easeInOutCubic;
     var start = null;
     function frame(now) {
       if (start === null) start = now;

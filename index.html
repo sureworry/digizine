@@ -17,22 +17,32 @@
 </head>
 <body>
   <script>
-    /* Returning from L2: show its folded cover where it left off from the first paint (script.js zooms it home). */
+    /*
+     * Returning from L2: carry its zoom home on from the first paint, along the same timeline
+     * (coverReturnEase in script.js), until script.js takes over.
+     */
     (function () {
       try {
         var d = JSON.parse(sessionStorage.getItem('digizineCoverReturn') || 'null');
-        if (!d || !d.rect || !d.src || Date.now() - d.at > 5000) return;
+        if (!d || !d.from || !d.src || Date.now() - d.at > 5000) return;
         document.documentElement.classList.add('cover-returning');
         var img = document.createElement('img');
         img.className = 'cover-zoom-hold';
         img.alt = '';
         img.decoding = 'sync';
         img.src = d.src;
-        img.style.left = d.rect.left + 'px';
-        img.style.top = d.rect.top + 'px';
-        img.style.width = d.rect.width + 'px';
-        img.style.height = d.rect.height + 'px';
         document.body.appendChild(img);
+        (function place() {
+          if (window.__coverReturnTakenOver) return;
+          var p = d.to ? Math.min(1, (Date.now() - d.at) / d.ms) : 0;
+          var e = 1 - Math.pow(1 - p, 3);
+          var to = d.to || d.from;
+          img.style.left = d.from.left + (to.left - d.from.left) * e + 'px';
+          img.style.top = d.from.top + (to.top - d.from.top) * e + 'px';
+          img.style.width = d.from.width + (to.width - d.from.width) * e + 'px';
+          img.style.height = d.from.height + (to.height - d.from.height) * e + 'px';
+          if (p < 1) requestAnimationFrame(place);
+        })();
       } catch (e) {}
     })();
   </script>

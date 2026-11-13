@@ -14,19 +14,55 @@
     }
   }
 
-  /* Once the reader has folded back onto its cover: hand the cover's rect to the homepage, which zooms it home. */
-  function returnToShelf(slug, issue, rect) {
+  function takeShelfSpot(slug) {
+    try {
+      var d = JSON.parse(sessionStorage.getItem('digizineShelfSpot') || 'null');
+      return d && d.slug === slug && d.rect ? d.rect : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* The folded strip glides toward the cover's shelf spot (the homepage carries on from the same timeline). */
+  function flyCoverHome(strip, from, to, at, ms) {
+    var outer = strip.closest('.zine-strip-outer') || strip;
+    var o = outer.getBoundingClientRect();
+    outer.style.transition = 'none';
+    outer.style.transformOrigin =
+      from.left + from.width / 2 - o.left + 'px ' + (from.top + from.height / 2 - o.top) + 'px';
+    (function frame() {
+      var p = Math.min(1, (Date.now() - at) / ms);
+      var e = coverReturnEase(p);
+      var h = from.height + (to.height - from.height) * e;
+      var cx = from.left + from.width / 2 + (to.left + to.width / 2 - (from.left + from.width / 2)) * e;
+      var cy = from.top + from.height / 2 + (to.top + to.height / 2 - (from.top + from.height / 2)) * e;
+      outer.style.transform =
+        'translate(' +
+        (cx - (from.left + from.width / 2)) +
+        'px,' +
+        (cy - (from.top + from.height / 2)) +
+        'px) scale(' +
+        h / from.height +
+        ')';
+      if (p < 1) requestAnimationFrame(frame);
+    })();
+  }
+
+  /*
+   * Once the reader has folded back onto its cover: without stopping, zoom it toward its shelf spot and load
+   * the homepage, which picks the zoom up mid-flight.
+   */
+  function returnToShelf(slug, issue, rect, strip) {
+    var from = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    var to = takeShelfSpot(slug);
+    var at = Date.now();
     try {
       sessionStorage.setItem(
         'digizineCoverReturn',
-        JSON.stringify({
-          slug: slug,
-          at: Date.now(),
-          rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
-          src: issue.cover
-        })
+        JSON.stringify({ slug: slug, at: at, from: from, to: to, ms: COVER_RETURN_MS, src: issue.cover })
       );
     } catch (e) {}
+    if (to && strip) flyCoverHome(strip, from, to, at, COVER_RETURN_MS);
     var ref = null;
     try {
       ref = document.referrer ? new URL(document.referrer) : null;
@@ -70,8 +106,8 @@
         foldStyle: 'accordion',
         landOnCover: true,
         introRect: takeCoverZoomRect(slug),
-        onClosedToCover: function (rect) {
-          returnToShelf(slug, issue, rect);
+        onClosedToCover: function (rect, stripEl) {
+          returnToShelf(slug, issue, rect, stripEl);
         }
       });
     }

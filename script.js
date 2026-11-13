@@ -993,6 +993,7 @@ function zoomCoverIntoIssue(el, slug, href) {
       height: th
     };
     var zoom = coverZoomTransform(box, artBox, aspect, target);
+    rememberShelfSpot(slug, shelfArtRect(box, artBox, aspect));
     var z = buildCoverZoomLayer(el, box, artBox, coverSrc, zoom.s);
     document.body.appendChild(z.layer);
     state.layer = z.layer;
@@ -1022,21 +1023,53 @@ function zoomCoverIntoIssue(el, slug, href) {
 }
 
 /*
- * L2 → homepage: the reader folds back onto its cover and hands its rect over (digizineCoverReturn); the
- * cover zooms back down into its shelf spot while the shelf fades in, turning back into the taped shelf
- * image as it lands. index.html shows the cover at that rect from the first paint.
+ * L2 → homepage: the reader folds back onto its cover and, without stopping, starts zooming it toward its
+ * shelf spot (remembered at tap time) while it loads the homepage (digizineCoverReturn: from, to, at, ms).
+ * index.html carries the zoom on from the first paint and this takes over mid-flight, so the motion never
+ * pauses; the shelf fades in and the cover turns back into the taped shelf image as it lands.
  */
-var COVER_RETURN_MS = 310;
-var COVER_RETURN_EASE = 'cubic-bezier(0.45, 0, 0.25, 1)';
+var COVER_RETURN_MS = 620;
 /** Near the end the shelf image fades in under the issue art, then the art fades off it. */
-var COVER_RETURN_SHELF_FADE_MS = 80;
-var COVER_RETURN_ART_FADE_MS = 60;
+var COVER_RETURN_SHELF_FADE_MS = 160;
+var COVER_RETURN_ART_FADE_MS = 120;
 /** The shelf image is fully in this long before the art finishes fading off it. */
-var COVER_RETURN_SWAP_OVERLAP_MS = 30;
+var COVER_RETURN_SWAP_OVERLAP_MS = 60;
 /** Covers with a differently shaped shelf sheet: widen into it over this part of the zoom, then a softer swap. */
 var COVER_RETURN_PAPER_WIDEN = [0.1, 0.55];
-var COVER_RETURN_PAPER_SWAP_MS = 110;
+var COVER_RETURN_PAPER_SWAP_MS = 220;
 var homepageShelfScrollRestored = false;
+
+/** Leaves the cover at speed (the fold arrives still moving) and settles into the shelf spot. */
+function coverReturnEase(p) {
+  return 1 - Math.pow(1 - p, 3);
+}
+
+function lerpRect(a, b, t) {
+  return {
+    left: a.left + (b.left - a.left) * t,
+    top: a.top + (b.top - a.top) * t,
+    width: a.width + (b.width - a.width) * t,
+    height: a.height + (b.height - a.height) * t
+  };
+}
+
+function clamp01(v) {
+  return Math.max(0, Math.min(1, v));
+}
+
+/** Where the issue art sits on screen when the zoom layer is at rest on the shelf. */
+function shelfArtRect(box, artBox, aspect) {
+  var regionW = box.width * artBox.width;
+  var regionH = box.height * artBox.height;
+  var h = Math.min(regionH, regionW / aspect);
+  var w = h * aspect;
+  return {
+    left: box.left + (artBox.left + artBox.width / 2) * box.width - w / 2,
+    top: box.top + (artBox.top + artBox.height / 2) * box.height - h / 2,
+    width: w,
+    height: h
+  };
+}
 
 function shelfScrollContainer() {
   return document.querySelector('main.shelf-container');
@@ -1055,6 +1088,13 @@ function rememberShelfScroll() {
         mobile: isMobileHomepageLayout()
       })
     );
+  } catch (e) {}
+}
+
+/* Where the tapped cover's art sits on the shelf, so the reader can start the zoom home toward it. */
+function rememberShelfSpot(slug, rect) {
+  try {
+    sessionStorage.setItem('digizineShelfSpot', JSON.stringify({ slug: slug, rect: rect }));
   } catch (e) {}
 }
 
@@ -1078,7 +1118,7 @@ function takeCoverReturn() {
     var raw = sessionStorage.getItem('digizineCoverReturn');
     sessionStorage.removeItem('digizineCoverReturn');
     var d = raw ? JSON.parse(raw) : null;
-    if (!d || !d.slug || !d.rect || !d.src || Date.now() - d.at > 5000) return null;
+    if (!d || !d.slug || !d.from || !d.src || Date.now() - d.at > 5000) return null;
     return d;
   } catch (e) {
     return null;
@@ -1103,11 +1143,12 @@ function playCoverReturn(d) {
   var root = document.documentElement;
   var shelf = shelfScrollContainer();
   function dropHold() {
+    window.__coverReturnTakenOver = true;
     var hold = document.querySelector('.cover-zoom-hold');
     if (hold && hold.parentNode) hold.parentNode.removeChild(hold);
   }
   function revealShelf(ms) {
-    if (shelf) shelf.style.transition = ms ? 'opacity ' + ms + 'ms ease' : '';
+    if (shelf) shelf.style.transition = ms ? 'opacity ' + Math.round(ms) + 'ms ease' : '';
     root.classList.remove('cover-returning');
   }
   var el = findShelfCoverForSlug(d.slug);
@@ -1123,47 +1164,44 @@ function playCoverReturn(d) {
   Promise.all([whenCoverArtReady(el), whenCoverArtReady(art)]).then(function () {
     var box = shelfCoverImageBox(el);
     var artBox = shelfCoverArtBox(el);
-    var aspect = art.naturalWidth && art.naturalHeight ? art.naturalWidth / art.naturalHeight : d.rect.width / d.rect.height;
-    var zoom = coverZoomTransform(box, artBox, aspect, d.rect);
-    var z = buildCoverZoomLayer(el, box, artBox, d.src, zoom.s);
-    z.layer.style.transform = zoom.css;
-    z.artImg.style.opacity = '1';
-    z.shelfImg.style.opacity = '0';
-    document.body.appendChild(z.layer);
-    dropHold();
+    var aspect = art.naturalWidth && art.naturalHeight ? art.naturalWidth / art.naturalHeight : d.from.width / d.from.height;
+    var to = shelfArtRect(box, artBox, aspect);
+    var ms = d.ms || COVER_RETURN_MS;
+    /* Already under way if the reader started it (d.to); otherwise it starts now from the cover's rect. */
+    var start = d.to ? d.at : Date.now();
+    var z = buildCoverZoomLayer(el, box, artBox, d.src, coverZoomTransform(box, artBox, aspect, d.from).s);
+    var shelfFade = z.paper ? COVER_RETURN_PAPER_SWAP_MS : COVER_RETURN_SHELF_FADE_MS;
+    var artFade = z.paper ? COVER_RETURN_PAPER_SWAP_MS : COVER_RETURN_ART_FADE_MS;
+    var shadow = z.artImg.style.filter;
 
-    void z.layer.offsetWidth;
-    requestAnimationFrame(function () {
-      revealShelf(COVER_RETURN_MS);
-      z.layer.style.transition = 'transform ' + COVER_RETURN_MS + 'ms ' + COVER_RETURN_EASE;
-      z.layer.style.transform = 'none';
-      var shelfFade = z.paper ? COVER_RETURN_PAPER_SWAP_MS : COVER_RETURN_SHELF_FADE_MS;
-      var artFade = z.paper ? COVER_RETURN_PAPER_SWAP_MS : COVER_RETURN_ART_FADE_MS;
+    function render() {
+      var t = Math.min(ms, Date.now() - start);
+      var rect = lerpRect(d.from, to, coverReturnEase(t / ms));
+      z.layer.style.transform = coverZoomTransform(box, artBox, aspect, rect).css;
+      z.shelfImg.style.opacity = String(clamp01((t - (ms - shelfFade - COVER_RETURN_SWAP_OVERLAP_MS)) / shelfFade));
+      z.artImg.style.opacity = String(1 - clamp01((t - (ms - artFade)) / artFade));
       if (z.paper) {
         /* Widen into the shelf sheet's shape on the way, the art's own shadow giving way to the sheet's */
-        var widen = Math.round(COVER_RETURN_MS * COVER_RETURN_PAPER_WIDEN[0]) + 'ms';
-        var widenDur = Math.round(COVER_RETURN_MS * (COVER_RETURN_PAPER_WIDEN[1] - COVER_RETURN_PAPER_WIDEN[0])) + 'ms';
-        z.paper.style.transition = 'opacity ' + widenDur + ' ease ' + widen;
-        z.paper.style.opacity = '1';
-        z.artImg.style.filter = 'drop-shadow(0px 0px 0px rgba(0, 0, 0, 0))';
-        setTimeout(function () {
-          z.paper.style.transition = 'opacity ' + COVER_RETURN_PAPER_SWAP_MS + 'ms ease';
-          z.paper.style.opacity = '0';
-        }, COVER_RETURN_MS - COVER_RETURN_PAPER_SWAP_MS);
+        var widen = clamp01((t / ms - COVER_RETURN_PAPER_WIDEN[0]) / (COVER_RETURN_PAPER_WIDEN[1] - COVER_RETURN_PAPER_WIDEN[0]));
+        z.paper.style.opacity = String(Math.min(widen, 1 - clamp01((t - (ms - COVER_RETURN_PAPER_SWAP_MS)) / COVER_RETURN_PAPER_SWAP_MS)));
+        z.artImg.style.filter = widen < 1 ? shadow.replace('0.06)', (0.06 * (1 - widen)).toFixed(4) + ')') : 'none';
       }
-      z.shelfImg.style.transition =
-        'opacity ' + shelfFade + 'ms ease ' + (COVER_RETURN_MS - shelfFade - COVER_RETURN_SWAP_OVERLAP_MS) + 'ms';
-      z.shelfImg.style.opacity = '1';
-      z.artImg.style.transition =
-        'opacity ' + artFade + 'ms ease ' + (COVER_RETURN_MS - artFade) + 'ms' +
-        (z.paper ? ', filter ' + widenDur + ' ease ' + widen : '');
-      z.artImg.style.opacity = '0';
-      setTimeout(function () {
-        el.style.visibility = '';
-        if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
-        if (shelf) shelf.style.transition = '';
-      }, COVER_RETURN_MS + 40);
-    });
+      return t >= ms;
+    }
+
+    render();
+    document.body.appendChild(z.layer);
+    dropHold();
+    revealShelf(Math.max(0, ms - (Date.now() - start)));
+    (function frame() {
+      if (!render()) {
+        requestAnimationFrame(frame);
+        return;
+      }
+      el.style.visibility = '';
+      if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
+      if (shelf) shelf.style.transition = '';
+    })();
   });
 }
 
