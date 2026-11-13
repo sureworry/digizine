@@ -785,7 +785,15 @@ body:has(.shelf-container) {
       218px,
       max(160px, calc(100svh - var(--issue-l2-chrome-y-mobile)))
     );
-    --zine-open-padding-x: 84px;
+    /* 84px from the screen edge, inside the full-bleed strip (+24px wrapper padding it spans) */
+    --zine-open-padding-x: 108px;
+  }
+
+  /* The strip clips its pages: span the wrapper's side padding so the zine bleeds to the screen edges */
+  .issue-page--scroll .zine-strip-wrap .zine-strip-root {
+    width: calc(100% + 48px);
+    margin-left: -24px;
+    margin-right: -24px;
   }
 
   /* L2: pan-y on main so vertical page scroll works; open strip uses pan-x (CSS + JS swipe → scrollLeft). */
