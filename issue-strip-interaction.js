@@ -105,6 +105,9 @@
      * Accordion: same row layout folded/flat, so only per-page transforms animate (no FLIP).
      * landOnCover: closing folds all the way back onto the cover; tapping the cover fans it out to the zigzag.
      */
+    /** Heading home, the zigzag folds onto the cover this much faster than the rest of the close. */
+    var CLOSE_HOME_FOLD_SPEED = 1.5;
+
     function runAccordionTransition(strip, opening) {
       var ZA = global.ZineAccordion;
       if (opening) {
@@ -126,6 +129,7 @@
           offsetX: spreadOffset,
           /* Heading home: arrive on the cover still moving, straight into the zoom home (no settle). */
           easing: headingHome ? 'in' : null,
+          closedSpeed: headingHome ? CLOSE_HOME_FOLD_SPEED : 1,
           onDone:
             headingHome
               ? function () {

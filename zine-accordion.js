@@ -226,11 +226,55 @@
     return typeof strip._zineStage === 'number' ? strip._zineStage : STAGE_ZIGZAG;
   }
 
+  /*
+   * Stage as a function of progress (0–1) from `from` to `to`, with the zigzag ↔ closed stretch run at
+   * `closedSpeed` times the default pace. length: the run's duration in default-pace stages.
+   */
+  function stagePath(from, to, closedSpeed) {
+    if (closedSpeed === 1) {
+      return {
+        length: Math.abs(to - from),
+        at: function (p) {
+          return lerp(from, to, p);
+        }
+      };
+    }
+    function pace(s) {
+      var k = Math.max(0, Math.min(1, (s - (STAGE_ZIGZAG - 0.2)) / 0.4));
+      return closedSpeed + (1 - closedSpeed) * k * k * (3 - 2 * k);
+    }
+    var steps = 200;
+    var times = [0];
+    for (var i = 1; i <= steps; i++) {
+      var s = lerp(from, to, (i - 0.5) / steps);
+      times.push(times[i - 1] + Math.abs(to - from) / steps / pace(s));
+    }
+    var total = times[steps];
+    return {
+      length: total,
+      at: function (p) {
+        var target = p * total;
+        var lo = 0;
+        var hi = steps;
+        while (hi - lo > 1) {
+          var mid = (lo + hi) >> 1;
+          if (times[mid] < target) lo = mid;
+          else hi = mid;
+        }
+        var span = times[hi] - times[lo];
+        var f = span > 0 ? (target - times[lo]) / span : 0;
+        return lerp(from, to, (lo + f) / steps);
+      }
+    };
+  }
+
   /**
    * Animate to a stage. offsetX: where the flat row sits relative to scrollLeft 0 (−scrollLeft before closing),
    * so folding starts from the spread on screen instead of jumping back to the first page.
    * easing: 'out' starts moving at once (e.g. carrying on from the homepage zoom) instead of easing in;
    * 'in' arrives still moving (e.g. handing straight on to the zoom home) instead of settling.
+   * closedSpeed: pace multiplier for the zigzag ↔ closed stretch (blended in around the zigzag, so the
+   * change of pace never lurches); the rest keeps the default pace.
    */
   function animateTo(strip, toStage, opts) {
     opts = opts || {};
@@ -246,7 +290,8 @@
       if (opts.onDone) opts.onDone();
     }
 
-    var duration = STAGE_MS * Math.abs(toStage - from);
+    var path = stagePath(from, toStage, opts.closedSpeed || 1);
+    var duration = STAGE_MS * path.length;
     if (opts.animate === false || duration < 16) {
       settle();
       return;
@@ -257,7 +302,7 @@
     function frame(now) {
       if (start === null) start = now;
       var t = Math.min(1, (now - start) / duration);
-      render(strip, geo, lerp(from, toStage, ease(t)), offsetX);
+      render(strip, geo, path.at(ease(t)), offsetX);
       if (t < 1) {
         strip._zineAccordionRaf = requestAnimationFrame(frame);
       } else {
