@@ -1149,14 +1149,21 @@ function playCoverReturn(d) {
     var hold = document.querySelector('.cover-zoom-hold');
     if (hold && hold.parentNode) hold.parentNode.removeChild(hold);
   }
-  function revealHome(ms) {
-    if (home) home.style.transition = ms ? 'opacity ' + Math.round(ms) + 'ms ease-in-out' : '';
+  /*
+   * Fade driven per frame, not by a CSS transition: Safari restoring the homepage from bfcache can skip a
+   * transition started in pageshow, so the page would just appear.
+   */
+  function setHomeOpacity(v) {
+    if (home) home.style.opacity = v == null ? '' : String(v);
+  }
+  function revealHome() {
+    setHomeOpacity(null);
     root.classList.remove('cover-returning');
   }
   var el = findShelfCoverForSlug(d.slug);
   if (!el || prefersReducedMotion()) {
     dropHold();
-    revealHome(0);
+    revealHome();
     return;
   }
   root.classList.add('cover-returning');
@@ -1188,27 +1195,26 @@ function playCoverReturn(d) {
         z.paper.style.opacity = String(Math.min(widen, 1 - clamp01((t - (ms - COVER_RETURN_PAPER_SWAP_MS)) / COVER_RETURN_PAPER_SWAP_MS)));
         z.artImg.style.filter = widen < 1 ? shadow.replace('0.06)', (0.06 * (1 - widen)).toFixed(4) + ')') : 'none';
       }
-      return t >= ms;
+      var f = clamp01((Date.now() - fadeStart) / COVER_RETURN_HOME_FADE_MS);
+      setHomeOpacity(0.5 - 0.5 * Math.cos(Math.PI * f));
+      /* The landed cover sits inside the fading homepage: the zoom layer stays over it until the fade is done */
+      return t >= ms && f >= 1;
     }
 
+    var fadeStart = Date.now();
+    setHomeOpacity(0);
+    root.classList.remove('cover-returning');
     render();
     document.body.appendChild(z.layer);
     dropHold();
-    revealHome(COVER_RETURN_HOME_FADE_MS);
-    var fadeDone = new Promise(function (resolve) {
-      setTimeout(resolve, COVER_RETURN_HOME_FADE_MS + 30);
-    });
     (function frame() {
       if (!render()) {
         requestAnimationFrame(frame);
         return;
       }
-      /* The landed cover sits inside the fading homepage: keep the zoom layer over it until the fade is done */
-      fadeDone.then(function () {
-        el.style.visibility = '';
-        if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
-        if (home) home.style.transition = '';
-      });
+      el.style.visibility = '';
+      if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
+      setHomeOpacity(null);
     })();
   });
 }
@@ -1229,7 +1235,15 @@ window.addEventListener('pageshow', function (e) {
   }
   var d = takeCoverReturn();
   if (d) playCoverReturn(d);
+  else document.documentElement.classList.remove('cover-returning');
   document.body.classList.remove('homepage-cover-zooming');
+});
+
+/* Leaving on a cover zoom: cache the homepage hidden, so coming back doesn't flash it before it fades in. */
+window.addEventListener('pagehide', function (e) {
+  if (e && e.persisted && homepageCoverZoomActive && document.getElementById('content-frame')) {
+    document.documentElement.classList.add('cover-returning');
+  }
 });
 
 /* Zine navigation: click on cover (skipped right after a drag on draggable covers) */
