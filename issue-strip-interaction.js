@@ -106,7 +106,7 @@
      * landOnCover: closing folds all the way back onto the cover; tapping the cover fans it out to the zigzag.
      */
     /** Heading home, the zigzag folds onto the cover this much faster than the rest of the close. */
-    var CLOSE_HOME_FOLD_SPEED = 1.5;
+    var CLOSE_HOME_FOLD_SPEED = 1.75;
 
     function runAccordionTransition(strip, opening) {
       var ZA = global.ZineAccordion;
