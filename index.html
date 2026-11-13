@@ -16,6 +16,26 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <script>
+    /* Returning from L2: show its folded cover where it left off from the first paint (script.js zooms it home). */
+    (function () {
+      try {
+        var d = JSON.parse(sessionStorage.getItem('digizineCoverReturn') || 'null');
+        if (!d || !d.rect || !d.src || Date.now() - d.at > 5000) return;
+        document.documentElement.classList.add('cover-returning');
+        var img = document.createElement('img');
+        img.className = 'cover-zoom-hold';
+        img.alt = '';
+        img.decoding = 'sync';
+        img.src = d.src;
+        img.style.left = d.rect.left + 'px';
+        img.style.top = d.rect.top + 'px';
+        img.style.width = d.rect.width + 'px';
+        img.style.height = d.rect.height + 'px';
+        document.body.appendChild(img);
+      } catch (e) {}
+    })();
+  </script>
   <div class="wrapper">
   <header class="header">
     <h1 class="title">

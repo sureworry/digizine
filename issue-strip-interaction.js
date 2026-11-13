@@ -122,7 +122,13 @@
         strip.scrollLeft = 0;
         ZA.animateTo(strip, landOnCover ? ZA.STAGE_CLOSED : ZA.STAGE_ZIGZAG, {
           animate: !reduceMotion,
-          offsetX: spreadOffset
+          offsetX: spreadOffset,
+          onDone:
+            landOnCover && options.onClosedToCover
+              ? function () {
+                  options.onClosedToCover(getPages(strip)[0].getBoundingClientRect());
+                }
+              : null
         });
       }
       syncChrome(strip, opening);

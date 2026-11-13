@@ -220,7 +220,7 @@ function captureOriginalDraggableYPositions() {
  * is centered in the viewport. Matches .content-frame { left: 160px } and shelf width 1120 in spec.
  */
 function centerHomepageFirstShelfClusterInView() {
-  if (isMobileHomepageLayout()) return;
+  if (isMobileHomepageLayout() || homepageShelfScrollRestored) return;
   var shelf = document.querySelector('main.shelf-container');
   if (!shelf || !document.getElementById('content-frame')) return;
   var spec = typeof HOMEPAGE_LAYOUT_SPEC !== 'undefined' ? HOMEPAGE_LAYOUT_SPEC : null;
@@ -859,14 +859,80 @@ function estimateIssueCoverHeight() {
   return Math.min(520, Math.max(220, h - 520));
 }
 
+function prefersReducedMotion() {
+  return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function shelfCoverArtBox(el) {
+  return SHELF_COVER_ART_BOX[el.getAttribute('data-layout-id')] || { left: 0, top: 0, width: 1, height: 1 };
+}
+
+function issueCoverImage(src) {
+  var art = homepageIssueCoverImages[src];
+  if (!art) {
+    art = new Image();
+    art.src = src;
+    homepageIssueCoverImages[src] = art;
+  }
+  return art;
+}
+
+/*
+ * Uniform transform (origin top-left) for a layer at the shelf image's on-screen box, so the issue art —
+ * contained in its box inside the shelf image — lands exactly on `rect`.
+ */
+function coverZoomTransform(box, artBox, aspect, rect) {
+  var regionW = box.width * artBox.width;
+  var regionH = box.height * artBox.height;
+  var s = rect.height / Math.min(regionH, regionW / aspect);
+  var regionCx = (artBox.left + artBox.width / 2) * box.width;
+  var regionCy = (artBox.top + artBox.height / 2) * box.height;
+  return {
+    s: s,
+    css:
+      'translate(' +
+      (rect.left + rect.width / 2 - (box.left + s * regionCx)) +
+      'px, ' +
+      (rect.top + rect.height / 2 - (box.top + s * regionCy)) +
+      'px) scale(' +
+      s +
+      ')'
+  };
+}
+
+/* The zoom layer: the shelf image, with the issue art over the matching art inside it. */
+function buildCoverZoomLayer(el, box, artBox, coverSrc, s) {
+  var layer = document.createElement('div');
+  layer.className = 'cover-zoom';
+  layer.setAttribute('aria-hidden', 'true');
+  layer.style.left = box.left + 'px';
+  layer.style.top = box.top + 'px';
+  layer.style.width = box.width + 'px';
+  layer.style.height = box.height + 'px';
+  var shelfImg = document.createElement('img');
+  shelfImg.className = 'cover-zoom__shelf';
+  shelfImg.src = el.currentSrc || el.src;
+  shelfImg.alt = '';
+  var artImg = document.createElement('img');
+  artImg.className = 'cover-zoom__art';
+  artImg.src = coverSrc;
+  artImg.alt = '';
+  artImg.style.left = artBox.left * 100 + '%';
+  artImg.style.top = artBox.top * 100 + '%';
+  artImg.style.width = artBox.width * 100 + '%';
+  artImg.style.height = artBox.height * 100 + '%';
+  /* Shadow in pre-scale units so it matches the reader cover's shadow at full zoom. */
+  artImg.style.filter = 'drop-shadow(0px ' + 4 / s + 'px ' + 12 / s + 'px rgba(0, 0, 0, 0.06))';
+  layer.appendChild(shelfImg);
+  layer.appendChild(artImg);
+  return { layer: layer, shelfImg: shelfImg, artImg: artImg };
+}
+
 function zoomCoverIntoIssue(el, slug, href) {
   if (homepageCoverZoomActive) return;
-  var reduceMotion =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var issue = typeof getIssueBySlug === 'function' ? getIssueBySlug(slug) : null;
   var coverSrc = issue && issue.cover;
-  if (reduceMotion || !coverSrc) {
+  if (prefersReducedMotion() || !coverSrc) {
     window.location.assign(href);
     return;
   }
@@ -874,14 +940,10 @@ function zoomCoverIntoIssue(el, slug, href) {
   homepageCoverZoomActive = state;
 
   var box = shelfCoverImageBox(el);
-  var artBox = SHELF_COVER_ART_BOX[el.getAttribute('data-layout-id')] || { left: 0, top: 0, width: 1, height: 1 };
-  var art = homepageIssueCoverImages[coverSrc];
-  if (!art) {
-    art = new Image();
-    art.src = coverSrc;
-    homepageIssueCoverImages[coverSrc] = art;
-  }
+  var artBox = shelfCoverArtBox(el);
+  var art = issueCoverImage(coverSrc);
   prefetchIssue(issue, href);
+  rememberShelfScroll();
   var navigated = false;
   function go(target, from, remainingMs) {
     if (navigated) return;
@@ -904,9 +966,10 @@ function zoomCoverIntoIssue(el, slug, href) {
   whenCoverArtReady(art).then(function () {
     if (navigated) return;
     clearTimeout(giveUp);
-    var regionW = box.width * artBox.width;
-    var regionH = box.height * artBox.height;
-    var aspect = art.naturalWidth && art.naturalHeight ? art.naturalWidth / art.naturalHeight : regionW / regionH;
+    var aspect =
+      art.naturalWidth && art.naturalHeight
+        ? art.naturalWidth / art.naturalHeight
+        : (box.width * artBox.width) / (box.height * artBox.height);
     var th = estimateIssueCoverHeight();
     var tw = th * aspect;
     var target = {
@@ -915,59 +978,26 @@ function zoomCoverIntoIssue(el, slug, href) {
       width: tw,
       height: th
     };
-
-    /*
-     * One layer at the shelf image's on-screen box, scaled uniformly (origin top-left) so the issue art —
-     * contained in its box inside the shelf image — lands exactly on the reader's cover rect.
-     */
-    var artShownH = Math.min(regionH, regionW / aspect);
-    var s = th / artShownH;
-    var regionCx = (artBox.left + artBox.width / 2) * box.width;
-    var regionCy = (artBox.top + artBox.height / 2) * box.height;
-    var tx = target.left + tw / 2 - (box.left + s * regionCx);
-    var ty = target.top + th / 2 - (box.top + s * regionCy);
-
-    var layer = document.createElement('div');
-    layer.className = 'cover-zoom';
-    layer.setAttribute('aria-hidden', 'true');
-    layer.style.left = box.left + 'px';
-    layer.style.top = box.top + 'px';
-    layer.style.width = box.width + 'px';
-    layer.style.height = box.height + 'px';
-    var shelfImg = document.createElement('img');
-    shelfImg.className = 'cover-zoom__shelf';
-    shelfImg.src = el.currentSrc || el.src;
-    shelfImg.alt = '';
-    var artImg = document.createElement('img');
-    artImg.className = 'cover-zoom__art';
-    artImg.src = coverSrc;
-    artImg.alt = '';
-    artImg.style.left = artBox.left * 100 + '%';
-    artImg.style.top = artBox.top * 100 + '%';
-    artImg.style.width = artBox.width * 100 + '%';
-    artImg.style.height = artBox.height * 100 + '%';
-    /* Shadow in pre-scale units so it matches the reader cover's shadow once the zoom lands. */
-    artImg.style.filter = 'drop-shadow(0px ' + 4 / s + 'px ' + 12 / s + 'px rgba(0, 0, 0, 0.06))';
-    layer.appendChild(shelfImg);
-    layer.appendChild(artImg);
-    document.body.appendChild(layer);
-    state.layer = layer;
+    var zoom = coverZoomTransform(box, artBox, aspect, target);
+    var z = buildCoverZoomLayer(el, box, artBox, coverSrc, zoom.s);
+    document.body.appendChild(z.layer);
+    state.layer = z.layer;
     el.style.visibility = 'hidden';
     document.body.classList.add('homepage-cover-zooming');
 
-    void layer.offsetWidth;
+    void z.layer.offsetWidth;
     requestAnimationFrame(function () {
       var swap = 'opacity ' + COVER_ZOOM_SWAP_MS + 'ms ease';
-      artImg.style.transition = swap;
-      shelfImg.style.transition = swap;
-      artImg.style.opacity = '1';
-      shelfImg.style.opacity = '0';
-      layer.style.transition =
+      z.artImg.style.transition = swap;
+      z.shelfImg.style.transition = swap;
+      z.artImg.style.opacity = '1';
+      z.shelfImg.style.opacity = '0';
+      z.layer.style.transition =
         'transform ' + COVER_ZOOM_MS + 'ms ' + COVER_ZOOM_EASE + ' ' + COVER_ZOOM_SWAP_LEAD_MS + 'ms';
-      layer.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + s + ')';
+      z.layer.style.transform = zoom.css;
       setTimeout(function () {
         /* Where the cover is on screen right now: the art contained in its (mid-zoom) box */
-        var r = artImg.getBoundingClientRect();
+        var r = z.artImg.getBoundingClientRect();
         var h = Math.min(r.height, r.width / aspect);
         var w = h * aspect;
         var from = { left: r.left + (r.width - w) / 2, top: r.top + (r.height - h) / 2, width: w, height: h };
@@ -977,14 +1007,149 @@ function zoomCoverIntoIssue(el, slug, href) {
   });
 }
 
-/* Back button (bfcache): put the shelf back the way it was. */
+/*
+ * L2 → homepage: the reader folds back onto its cover and hands its rect over (digizineCoverReturn); the
+ * cover zooms back down into its shelf spot while the shelf fades in, turning back into the taped shelf
+ * image as it lands. index.html shows the cover at that rect from the first paint.
+ */
+var COVER_RETURN_MS = 620;
+var COVER_RETURN_EASE = 'cubic-bezier(0.45, 0, 0.25, 1)';
+/** Near the end the shelf image fades in under the issue art, then the art fades off it. */
+var COVER_RETURN_SHELF_FADE_MS = 160;
+var COVER_RETURN_ART_FADE_MS = 120;
+var homepageShelfScrollRestored = false;
+
+function shelfScrollContainer() {
+  return document.querySelector('main.shelf-container');
+}
+
+function rememberShelfScroll() {
+  var shelf = shelfScrollContainer();
+  try {
+    sessionStorage.setItem(
+      'digizineShelfScroll',
+      JSON.stringify({
+        left: shelf ? shelf.scrollLeft : 0,
+        top: shelf ? shelf.scrollTop : 0,
+        x: window.scrollX,
+        y: window.scrollY,
+        mobile: isMobileHomepageLayout()
+      })
+    );
+  } catch (e) {}
+}
+
+/* Put the shelf back where it was scrolled when the cover was tapped, so it returns to the same spot. */
+function restoreShelfScroll() {
+  try {
+    var d = JSON.parse(sessionStorage.getItem('digizineShelfScroll') || 'null');
+    if (!d || d.mobile !== isMobileHomepageLayout()) return;
+    var shelf = shelfScrollContainer();
+    if (shelf) {
+      shelf.scrollLeft = d.left;
+      shelf.scrollTop = d.top;
+    }
+    window.scrollTo(d.x, d.y);
+    homepageShelfScrollRestored = true;
+  } catch (e) {}
+}
+
+function takeCoverReturn() {
+  try {
+    var raw = sessionStorage.getItem('digizineCoverReturn');
+    sessionStorage.removeItem('digizineCoverReturn');
+    var d = raw ? JSON.parse(raw) : null;
+    if (!d || !d.slug || !d.rect || !d.src || Date.now() - d.at > 5000) return null;
+    return d;
+  } catch (e) {
+    return null;
+  }
+}
+
+function findShelfCoverForSlug(slug) {
+  var frame = document.getElementById('content-frame');
+  var els = frame ? frame.querySelectorAll('.zine-cover[data-zine]') : [];
+  for (var i = 0; i < els.length; i++) {
+    var s = els[i].getAttribute('data-slug');
+    if (!s) {
+      var asset = getHomepageAssetById(getZineId(els[i]));
+      s = asset && asset.slug;
+    }
+    if (s === slug) return els[i];
+  }
+  return null;
+}
+
+function playCoverReturn(d) {
+  var root = document.documentElement;
+  var shelf = shelfScrollContainer();
+  function dropHold() {
+    var hold = document.querySelector('.cover-zoom-hold');
+    if (hold && hold.parentNode) hold.parentNode.removeChild(hold);
+  }
+  function revealShelf(ms) {
+    if (shelf) shelf.style.transition = ms ? 'opacity ' + ms + 'ms ease' : '';
+    root.classList.remove('cover-returning');
+  }
+  var el = findShelfCoverForSlug(d.slug);
+  if (!el || prefersReducedMotion()) {
+    dropHold();
+    revealShelf(0);
+    return;
+  }
+  root.classList.add('cover-returning');
+  el.style.visibility = 'hidden';
+  restoreShelfScroll();
+  var art = issueCoverImage(d.src);
+  Promise.all([whenCoverArtReady(el), whenCoverArtReady(art)]).then(function () {
+    var box = shelfCoverImageBox(el);
+    var artBox = shelfCoverArtBox(el);
+    var aspect = art.naturalWidth && art.naturalHeight ? art.naturalWidth / art.naturalHeight : d.rect.width / d.rect.height;
+    var zoom = coverZoomTransform(box, artBox, aspect, d.rect);
+    var z = buildCoverZoomLayer(el, box, artBox, d.src, zoom.s);
+    z.layer.style.transform = zoom.css;
+    z.artImg.style.opacity = '1';
+    z.shelfImg.style.opacity = '0';
+    document.body.appendChild(z.layer);
+    dropHold();
+
+    void z.layer.offsetWidth;
+    requestAnimationFrame(function () {
+      revealShelf(COVER_RETURN_MS);
+      z.layer.style.transition = 'transform ' + COVER_RETURN_MS + 'ms ' + COVER_RETURN_EASE;
+      z.layer.style.transform = 'none';
+      z.shelfImg.style.transition =
+        'opacity ' + COVER_RETURN_SHELF_FADE_MS + 'ms ease ' + (COVER_RETURN_MS - COVER_RETURN_SHELF_FADE_MS - 60) + 'ms';
+      z.shelfImg.style.opacity = '1';
+      z.artImg.style.transition =
+        'opacity ' + COVER_RETURN_ART_FADE_MS + 'ms ease ' + (COVER_RETURN_MS - COVER_RETURN_ART_FADE_MS) + 'ms';
+      z.artImg.style.opacity = '0';
+      setTimeout(function () {
+        el.style.visibility = '';
+        if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
+        if (shelf) shelf.style.transition = '';
+      }, COVER_RETURN_MS + 40);
+    });
+  });
+}
+
+if (document.getElementById('content-frame')) {
+  var homepageCoverReturn = takeCoverReturn();
+  if (homepageCoverReturn) playCoverReturn(homepageCoverReturn);
+}
+
+/* Back button / return from L2 via history (bfcache): put the shelf back, zooming the cover home if handed one. */
 window.addEventListener('pageshow', function (e) {
-  if (!e || !e.persisted || !homepageCoverZoomActive) return;
+  if (!e || !e.persisted || !document.getElementById('content-frame')) return;
   var state = homepageCoverZoomActive;
-  if (state.layer && state.layer.parentNode) state.layer.parentNode.removeChild(state.layer);
-  if (state.el) state.el.style.visibility = '';
+  if (state) {
+    if (state.layer && state.layer.parentNode) state.layer.parentNode.removeChild(state.layer);
+    if (state.el) state.el.style.visibility = '';
+    homepageCoverZoomActive = false;
+  }
+  var d = takeCoverReturn();
+  if (d) playCoverReturn(d);
   document.body.classList.remove('homepage-cover-zooming');
-  homepageCoverZoomActive = false;
 });
 
 /* Zine navigation: click on cover (skipped right after a drag on draggable covers) */

@@ -14,6 +14,28 @@
     }
   }
 
+  /* Once the reader has folded back onto its cover: hand the cover's rect to the homepage, which zooms it home. */
+  function returnToShelf(slug, issue, rect) {
+    try {
+      sessionStorage.setItem(
+        'digizineCoverReturn',
+        JSON.stringify({
+          slug: slug,
+          at: Date.now(),
+          rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+          src: issue.cover
+        })
+      );
+    } catch (e) {}
+    var ref = null;
+    try {
+      ref = document.referrer ? new URL(document.referrer) : null;
+    } catch (e) {}
+    var fromShelf = ref && ref.origin === location.origin && /^\/(index(\.html)?)?$/.test(ref.pathname);
+    if (fromShelf && history.length > 1) history.back();
+    else location.assign('index.html');
+  }
+
   var DEFAULT_ISSUE_SLUG = 'confessions-of-an-anxious-creator';
   var slug =
     typeof takeIssueSlugForIssuePage === 'function'
@@ -47,7 +69,10 @@
         issue: issue,
         foldStyle: 'accordion',
         landOnCover: true,
-        introRect: takeCoverZoomRect(slug)
+        introRect: takeCoverZoomRect(slug),
+        onClosedToCover: function (rect) {
+          returnToShelf(slug, issue, rect);
+        }
       });
     }
   } else {

@@ -1342,6 +1342,10 @@ body:has(.shelf-container) {
   filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
 }
 
+html.cover-returning .shelf-container {
+  opacity: 0;
+}
+
 body.homepage-cover-zooming .shelf-container {
   opacity: 0;
   transition: opacity 0.36s ease;
