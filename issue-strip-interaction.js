@@ -105,6 +105,9 @@
      * Accordion: same row layout folded/flat, so only per-page transforms animate (no FLIP).
      * landOnCover: closing folds all the way back onto the cover; tapping the cover fans it out to the zigzag.
      */
+    /** Folding back onto the cover on the way home runs this much faster than opening. */
+    var CLOSE_HOME_SPEED = 2;
+
     function runAccordionTransition(strip, opening) {
       var ZA = global.ZineAccordion;
       if (opening) {
@@ -120,11 +123,13 @@
         strip.classList.remove('zine-strip--open');
         strip.classList.add('zine-strip--closed');
         strip.scrollLeft = 0;
+        var headingHome = landOnCover && !!options.onClosedToCover;
         ZA.animateTo(strip, landOnCover ? ZA.STAGE_CLOSED : ZA.STAGE_ZIGZAG, {
           animate: !reduceMotion,
           offsetX: spreadOffset,
+          speed: headingHome ? CLOSE_HOME_SPEED : 1,
           onDone:
-            landOnCover && options.onClosedToCover
+            headingHome
               ? function () {
                   options.onClosedToCover(getPages(strip)[0].getBoundingClientRect());
                 }

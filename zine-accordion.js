@@ -226,6 +226,7 @@
    * Animate to a stage. offsetX: where the flat row sits relative to scrollLeft 0 (−scrollLeft before closing),
    * so folding starts from the spread on screen instead of jumping back to the first page.
    * easing: 'out' starts moving at once (e.g. carrying on from the homepage zoom) instead of easing in.
+   * speed: multiplier on the default pace (2 = twice as fast).
    */
   function animateTo(strip, toStage, opts) {
     opts = opts || {};
@@ -241,7 +242,7 @@
       if (opts.onDone) opts.onDone();
     }
 
-    var duration = STAGE_MS * Math.abs(toStage - from);
+    var duration = (STAGE_MS / (opts.speed || 1)) * Math.abs(toStage - from);
     if (opts.animate === false || duration < 16) {
       settle();
       return;

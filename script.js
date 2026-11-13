@@ -1026,14 +1026,16 @@ function zoomCoverIntoIssue(el, slug, href) {
  * cover zooms back down into its shelf spot while the shelf fades in, turning back into the taped shelf
  * image as it lands. index.html shows the cover at that rect from the first paint.
  */
-var COVER_RETURN_MS = 620;
+var COVER_RETURN_MS = 310;
 var COVER_RETURN_EASE = 'cubic-bezier(0.45, 0, 0.25, 1)';
 /** Near the end the shelf image fades in under the issue art, then the art fades off it. */
-var COVER_RETURN_SHELF_FADE_MS = 160;
-var COVER_RETURN_ART_FADE_MS = 120;
+var COVER_RETURN_SHELF_FADE_MS = 80;
+var COVER_RETURN_ART_FADE_MS = 60;
+/** The shelf image is fully in this long before the art finishes fading off it. */
+var COVER_RETURN_SWAP_OVERLAP_MS = 30;
 /** Covers with a differently shaped shelf sheet: widen into it over this part of the zoom, then a softer swap. */
 var COVER_RETURN_PAPER_WIDEN = [0.1, 0.55];
-var COVER_RETURN_PAPER_SWAP_MS = 220;
+var COVER_RETURN_PAPER_SWAP_MS = 110;
 var homepageShelfScrollRestored = false;
 
 function shelfScrollContainer() {
@@ -1150,7 +1152,7 @@ function playCoverReturn(d) {
         }, COVER_RETURN_MS - COVER_RETURN_PAPER_SWAP_MS);
       }
       z.shelfImg.style.transition =
-        'opacity ' + shelfFade + 'ms ease ' + (COVER_RETURN_MS - shelfFade - 60) + 'ms';
+        'opacity ' + shelfFade + 'ms ease ' + (COVER_RETURN_MS - shelfFade - COVER_RETURN_SWAP_OVERLAP_MS) + 'ms';
       z.shelfImg.style.opacity = '1';
       z.artImg.style.transition =
         'opacity ' + artFade + 'ms ease ' + (COVER_RETURN_MS - artFade) + 'ms' +
