@@ -1026,7 +1026,7 @@ function zoomCoverIntoIssue(el, slug, href) {
  * L2 → homepage: the reader folds back onto its cover and, without stopping, starts zooming it toward its
  * shelf spot (remembered at tap time) while it loads the homepage (digizineCoverReturn: from, to, at, ms).
  * index.html carries the zoom on from the first paint and this takes over mid-flight, so the motion never
- * pauses; the whole homepage fades in and the cover turns back into the taped shelf image as it lands.
+ * pauses; the shelf fades in (the header stays put) and the cover turns back into the taped shelf image as it lands.
  */
 var COVER_RETURN_MS = 620;
 /** Near the end the shelf image fades in under the issue art, then the art fades off it. */
@@ -1037,7 +1037,7 @@ var COVER_RETURN_SWAP_OVERLAP_MS = 60;
 /** Covers with a differently shaped shelf sheet: widen into it over this part of the zoom, then a softer swap. */
 var COVER_RETURN_PAPER_WIDEN = [0.1, 0.55];
 var COVER_RETURN_PAPER_SWAP_MS = 220;
-/** The homepage fades in around the cover over this long, outlasting the zoom a little. */
+/** The shelf fades in around the cover over this long, outlasting the zoom a little. */
 var COVER_RETURN_HOME_FADE_MS = 800;
 var homepageShelfScrollRestored = false;
 
@@ -1143,7 +1143,7 @@ function findShelfCoverForSlug(slug) {
 
 function playCoverReturn(d) {
   var root = document.documentElement;
-  var home = document.querySelector('.wrapper');
+  var home = shelfScrollContainer();
   function dropHold() {
     window.__coverReturnTakenOver = true;
     var hold = document.querySelector('.cover-zoom-hold');
@@ -1223,6 +1223,17 @@ if (document.getElementById('content-frame')) {
   var homepageCoverReturn = takeCoverReturn();
   if (homepageCoverReturn) playCoverReturn(homepageCoverReturn);
 }
+
+/* Restored from bfcache, the flower's spin has drifted from the clock: restart it in phase with the other page. */
+window.addEventListener('pageshow', function (e) {
+  if (!e || !e.persisted) return;
+  document.documentElement.style.setProperty('--header-flower-phase', -(Date.now() % 16000) / 1000 + 's');
+  var flower = document.querySelector('.header-flower');
+  if (!flower) return;
+  flower.style.animation = 'none';
+  void flower.offsetWidth;
+  flower.style.animation = '';
+});
 
 /* Back button / return from L2 via history (bfcache): put the shelf back, zooming the cover home if handed one. */
 window.addEventListener('pageshow', function (e) {

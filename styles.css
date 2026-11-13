@@ -228,8 +228,10 @@ body:has(.shelf-container) {
   }
 }
 
+/* Phase from the clock (set in each page's head) so the flower carries on across pages instead of restarting */
 .header-flower {
   animation: header-flower-rotate 16s linear infinite;
+  animation-delay: var(--header-flower-phase, 0s);
   transform-origin: 50% 50%;
 }
 
@@ -1356,12 +1358,11 @@ body:has(.shelf-container) {
   filter: drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.06));
 }
 
-html.cover-returning .wrapper {
+html.cover-returning .shelf-container {
   opacity: 0;
 }
 
-/* Closing back to the shelf: the reader's chrome clears so only the cover is left when the homepage fades in */
-body.issue-page--heading-home .header,
+/* Closing back to the shelf: the back link clears (the header stays put) before the shelf fades in */
 body.issue-page--heading-home .issue-back {
   opacity: 0;
   transition: opacity 0.5s ease;
