@@ -107,6 +107,8 @@
      */
     /** Heading home, the close (flat → zigzag → cover) runs this much faster than opening. */
     var CLOSE_HOME_FOLD_SPEED = 1.75;
+    /** Landing on the issue, the cover fans out into the zigzag this much faster than other folds. */
+    var ARRIVAL_FOLD_SPEED = 1.5;
 
     function runAccordionTransition(strip, opening) {
       var ZA = global.ZineAccordion;
@@ -503,7 +505,7 @@
           ZA.setStage(stripEl, ZA.STAGE_CLOSED);
           function foldOut(easing) {
             if (ZA.getStage(stripEl) === ZA.STAGE_CLOSED) {
-              ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion, easing: easing });
+              ZA.animateTo(stripEl, ZA.STAGE_ZIGZAG, { animate: !reduceMotion, easing: easing, speed: ARRIVAL_FOLD_SPEED });
             }
           }
           if (options.introRect) {
