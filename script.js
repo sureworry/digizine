@@ -1026,7 +1026,7 @@ function zoomCoverIntoIssue(el, slug, href) {
  * L2 → homepage: the reader folds back onto its cover and, without stopping, starts zooming it toward its
  * shelf spot (remembered at tap time) while it loads the homepage (digizineCoverReturn: from, to, at, ms).
  * index.html carries the zoom on from the first paint and this takes over mid-flight, so the motion never
- * pauses; the shelf fades in and the cover turns back into the taped shelf image as it lands.
+ * pauses; the whole homepage fades in and the cover turns back into the taped shelf image as it lands.
  */
 var COVER_RETURN_MS = 620;
 /** Near the end the shelf image fades in under the issue art, then the art fades off it. */
@@ -1141,20 +1141,20 @@ function findShelfCoverForSlug(slug) {
 
 function playCoverReturn(d) {
   var root = document.documentElement;
-  var shelf = shelfScrollContainer();
+  var home = document.querySelector('.wrapper');
   function dropHold() {
     window.__coverReturnTakenOver = true;
     var hold = document.querySelector('.cover-zoom-hold');
     if (hold && hold.parentNode) hold.parentNode.removeChild(hold);
   }
-  function revealShelf(ms) {
-    if (shelf) shelf.style.transition = ms ? 'opacity ' + Math.round(ms) + 'ms ease' : '';
+  function revealHome(ms) {
+    if (home) home.style.transition = ms ? 'opacity ' + Math.round(ms) + 'ms ease' : '';
     root.classList.remove('cover-returning');
   }
   var el = findShelfCoverForSlug(d.slug);
   if (!el || prefersReducedMotion()) {
     dropHold();
-    revealShelf(0);
+    revealHome(0);
     return;
   }
   root.classList.add('cover-returning');
@@ -1192,7 +1192,7 @@ function playCoverReturn(d) {
     render();
     document.body.appendChild(z.layer);
     dropHold();
-    revealShelf(Math.max(0, ms - (Date.now() - start)));
+    revealHome(Math.max(0, ms - (Date.now() - start)));
     (function frame() {
       if (!render()) {
         requestAnimationFrame(frame);
@@ -1200,7 +1200,7 @@ function playCoverReturn(d) {
       }
       el.style.visibility = '';
       if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
-      if (shelf) shelf.style.transition = '';
+      if (home) home.style.transition = '';
     })();
   });
 }

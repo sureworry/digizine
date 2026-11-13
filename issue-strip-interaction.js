@@ -124,6 +124,7 @@
         strip.classList.add('zine-strip--closed');
         strip.scrollLeft = 0;
         var headingHome = landOnCover && !!options.onClosedToCover;
+        if (headingHome) document.body.classList.add('issue-page--heading-home');
         ZA.animateTo(strip, landOnCover ? ZA.STAGE_CLOSED : ZA.STAGE_ZIGZAG, {
           animate: !reduceMotion,
           offsetX: spreadOffset,
