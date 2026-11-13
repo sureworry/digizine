@@ -1333,6 +1333,12 @@ body:has(.shelf-container) {
   opacity: 0;
 }
 
+/* Plain sheet in the shelf paper's shape and colour, faded in on the way home (colour + box from JS) */
+.cover-zoom__paper {
+  position: absolute;
+  opacity: 0;
+}
+
 /* L2 stand-in for the zoomed cover until the reader's own cover is decoded and drawn (issue.html) */
 .cover-zoom-hold {
   position: fixed;

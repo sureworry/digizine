@@ -780,12 +780,13 @@ var COVER_ZOOM_MAX_WAIT_MS = 2500;
 /*
  * Where the issue artwork sits inside each taped shelf image (fractions of the shelf image), so the swap
  * happens in place. idea-marinade and observations use a different layout on the shelf, so theirs is the
- * paper area inside the tape and shadow.
+ * paper area inside the tape and shadow. paper: observations' shelf sheet is a different shape from its
+ * issue cover, so on the way home the cover widens into a sheet of the shared paper colour first.
  */
 var SHELF_COVER_ART_BOX = {
   confessions: { left: 0.0542, top: 0.0316, width: 0.8917, height: 0.9386 },
   'idea-marinade': { left: 0.1294, top: 0, width: 0.8706, height: 0.993 },
-  observations: { left: 0.0466, top: 0.0368, width: 0.917, height: 0.8937 },
+  observations: { left: 0.0466, top: 0.0368, width: 0.917, height: 0.8937, paper: '#e6e7e9' },
   romanticise: { left: 0.1333, top: 0, width: 0.8625, height: 0.9857 },
   'self-perception': { left: 0.1, top: 0.0782, width: 0.825, height: 0.8148 },
   collection: { left: 0.05, top: 0.0341, width: 0.8958, height: 0.9234 }
@@ -922,10 +923,23 @@ function buildCoverZoomLayer(el, box, artBox, coverSrc, s) {
   artImg.style.width = artBox.width * 100 + '%';
   artImg.style.height = artBox.height * 100 + '%';
   /* Shadow in pre-scale units so it matches the reader cover's shadow at full zoom. */
-  artImg.style.filter = 'drop-shadow(0px ' + 4 / s + 'px ' + 12 / s + 'px rgba(0, 0, 0, 0.06))';
+  var shadow = 'drop-shadow(0px ' + 4 / s + 'px ' + 12 / s + 'px rgba(0, 0, 0, 0.06))';
+  artImg.style.filter = shadow;
   layer.appendChild(shelfImg);
+  var paper = null;
+  if (artBox.paper) {
+    paper = document.createElement('div');
+    paper.className = 'cover-zoom__paper';
+    paper.style.background = artBox.paper;
+    paper.style.filter = shadow;
+    paper.style.left = artBox.left * 100 + '%';
+    paper.style.top = artBox.top * 100 + '%';
+    paper.style.width = artBox.width * 100 + '%';
+    paper.style.height = artBox.height * 100 + '%';
+    layer.appendChild(paper);
+  }
   layer.appendChild(artImg);
-  return { layer: layer, shelfImg: shelfImg, artImg: artImg };
+  return { layer: layer, shelfImg: shelfImg, artImg: artImg, paper: paper };
 }
 
 function zoomCoverIntoIssue(el, slug, href) {
@@ -1017,6 +1031,9 @@ var COVER_RETURN_EASE = 'cubic-bezier(0.45, 0, 0.25, 1)';
 /** Near the end the shelf image fades in under the issue art, then the art fades off it. */
 var COVER_RETURN_SHELF_FADE_MS = 160;
 var COVER_RETURN_ART_FADE_MS = 120;
+/** Covers with a differently shaped shelf sheet: widen into it over this part of the zoom, then a softer swap. */
+var COVER_RETURN_PAPER_WIDEN = [0.1, 0.55];
+var COVER_RETURN_PAPER_SWAP_MS = 220;
 var homepageShelfScrollRestored = false;
 
 function shelfScrollContainer() {
@@ -1118,11 +1135,26 @@ function playCoverReturn(d) {
       revealShelf(COVER_RETURN_MS);
       z.layer.style.transition = 'transform ' + COVER_RETURN_MS + 'ms ' + COVER_RETURN_EASE;
       z.layer.style.transform = 'none';
+      var shelfFade = z.paper ? COVER_RETURN_PAPER_SWAP_MS : COVER_RETURN_SHELF_FADE_MS;
+      var artFade = z.paper ? COVER_RETURN_PAPER_SWAP_MS : COVER_RETURN_ART_FADE_MS;
+      if (z.paper) {
+        /* Widen into the shelf sheet's shape on the way, the art's own shadow giving way to the sheet's */
+        var widen = Math.round(COVER_RETURN_MS * COVER_RETURN_PAPER_WIDEN[0]) + 'ms';
+        var widenDur = Math.round(COVER_RETURN_MS * (COVER_RETURN_PAPER_WIDEN[1] - COVER_RETURN_PAPER_WIDEN[0])) + 'ms';
+        z.paper.style.transition = 'opacity ' + widenDur + ' ease ' + widen;
+        z.paper.style.opacity = '1';
+        z.artImg.style.filter = 'drop-shadow(0px 0px 0px rgba(0, 0, 0, 0))';
+        setTimeout(function () {
+          z.paper.style.transition = 'opacity ' + COVER_RETURN_PAPER_SWAP_MS + 'ms ease';
+          z.paper.style.opacity = '0';
+        }, COVER_RETURN_MS - COVER_RETURN_PAPER_SWAP_MS);
+      }
       z.shelfImg.style.transition =
-        'opacity ' + COVER_RETURN_SHELF_FADE_MS + 'ms ease ' + (COVER_RETURN_MS - COVER_RETURN_SHELF_FADE_MS - 60) + 'ms';
+        'opacity ' + shelfFade + 'ms ease ' + (COVER_RETURN_MS - shelfFade - 60) + 'ms';
       z.shelfImg.style.opacity = '1';
       z.artImg.style.transition =
-        'opacity ' + COVER_RETURN_ART_FADE_MS + 'ms ease ' + (COVER_RETURN_MS - COVER_RETURN_ART_FADE_MS) + 'ms';
+        'opacity ' + artFade + 'ms ease ' + (COVER_RETURN_MS - artFade) + 'ms' +
+        (z.paper ? ', filter ' + widenDur + ' ease ' + widen : '');
       z.artImg.style.opacity = '0';
       setTimeout(function () {
         el.style.visibility = '';
