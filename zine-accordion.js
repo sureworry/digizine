@@ -226,6 +226,10 @@
     return typeof strip._zineStage === 'number' ? strip._zineStage : STAGE_ZIGZAG;
   }
 
+  function isAnimating(strip) {
+    return !!strip._zineAccordionRaf;
+  }
+
   /**
    * Animate to a stage. offsetX: where the flat row sits relative to scrollLeft 0 (−scrollLeft before closing),
    * so folding starts from the spread on screen instead of jumping back to the first page.
@@ -303,6 +307,7 @@
     animateTo: animateTo,
     setStage: setStage,
     getStage: getStage,
+    isAnimating: isAnimating,
     whenImagesReady: whenImagesReady
   };
 })(typeof window !== 'undefined' ? window : this);

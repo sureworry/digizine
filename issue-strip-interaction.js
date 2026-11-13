@@ -537,8 +537,9 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         if (accordion) {
-          if (stripEl.classList.contains('zine-strip--closed')) {
-            var ZA = global.ZineAccordion;
+          var ZA = global.ZineAccordion;
+          /* Leave a running fold alone: re-setting the stage would freeze it mid-way (iOS fires resize on arrival) */
+          if (stripEl.classList.contains('zine-strip--closed') && !ZA.isAnimating(stripEl)) {
             ZA.setStage(stripEl, Math.min(ZA.getStage(stripEl), ZA.STAGE_ZIGZAG));
           }
           return;
