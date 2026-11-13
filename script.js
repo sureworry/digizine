@@ -1037,6 +1037,8 @@ var COVER_RETURN_SWAP_OVERLAP_MS = 60;
 /** Covers with a differently shaped shelf sheet: widen into it over this part of the zoom, then a softer swap. */
 var COVER_RETURN_PAPER_WIDEN = [0.1, 0.55];
 var COVER_RETURN_PAPER_SWAP_MS = 220;
+/** The homepage fades in around the cover over this long, outlasting the zoom a little. */
+var COVER_RETURN_HOME_FADE_MS = 800;
 var homepageShelfScrollRestored = false;
 
 /** Leaves the cover at speed (the fold arrives still moving) and settles into the shelf spot. */
@@ -1148,7 +1150,7 @@ function playCoverReturn(d) {
     if (hold && hold.parentNode) hold.parentNode.removeChild(hold);
   }
   function revealHome(ms) {
-    if (home) home.style.transition = ms ? 'opacity ' + Math.round(ms) + 'ms ease' : '';
+    if (home) home.style.transition = ms ? 'opacity ' + Math.round(ms) + 'ms ease-in-out' : '';
     root.classList.remove('cover-returning');
   }
   var el = findShelfCoverForSlug(d.slug);
@@ -1192,15 +1194,21 @@ function playCoverReturn(d) {
     render();
     document.body.appendChild(z.layer);
     dropHold();
-    revealHome(Math.max(0, ms - (Date.now() - start)));
+    revealHome(COVER_RETURN_HOME_FADE_MS);
+    var fadeDone = new Promise(function (resolve) {
+      setTimeout(resolve, COVER_RETURN_HOME_FADE_MS + 30);
+    });
     (function frame() {
       if (!render()) {
         requestAnimationFrame(frame);
         return;
       }
-      el.style.visibility = '';
-      if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
-      if (home) home.style.transition = '';
+      /* The landed cover sits inside the fading homepage: keep the zoom layer over it until the fade is done */
+      fadeDone.then(function () {
+        el.style.visibility = '';
+        if (z.layer.parentNode) z.layer.parentNode.removeChild(z.layer);
+        if (home) home.style.transition = '';
+      });
     })();
   });
 }
